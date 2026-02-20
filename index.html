@@ -41,8 +41,35 @@
     #file-input { display: none; }
 
     /* KPI cards */
-    .kpi-card { border-radius: 12px; border: none; transition: transform .2s; }
-    .kpi-card:hover { transform: translateY(-4px); }
+    .kpi-card {
+      border-radius: 12px;
+      border: none;
+      transition: transform .2s, box-shadow .2s;
+      cursor: default;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    }
+
+    .kpi-card[style*="cursor: pointer"]:hover {
+      box-shadow: 0 8px 20px rgba(0, 48, 135, 0.3) !important;
+    }
+
+    .kpi-card .clickable-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 1rem;
+      opacity: 0.7;
+      transition: opacity .2s;
+    }
+
+    .kpi-card:hover .clickable-icon {
+      opacity: 1;
+    }
+
     .kpi-card .kpi-value { font-size: 2.2rem; font-weight: 700; }
     .kpi-card .kpi-label { font-size: .85rem; text-transform: uppercase; letter-spacing: .8px; opacity: .85; }
 
@@ -665,13 +692,36 @@ function initDashboard() {
   document.getElementById('meta-filesize').textContent  = formatFileSize(currentFileSize);
   document.getElementById('meta-count').textContent     = rawData.length.toLocaleString();
 
+  // Destroy existing charts to prevent accumulation
+  [chartStatus, chartScac, chartProgram, chartTrend, chartBodyType,
+   chartInstallType, chartVerification, chartExtCam, chartTestResults].forEach(chart => {
+    if (chart) chart.destroy();
+  });
+  chartStatus = chartScac = chartProgram = chartTrend = chartBodyType =
+  chartInstallType = chartVerification = chartExtCam = chartTestResults = null;
+
+  // Reset filters before populating with new data
+  resetFilters();
+
   populateFilters();
   applyFilters();
+
+  // Setup KPI click handlers after dashboard is initialized
+  setupKPIClickHandlers();
 }
 
 /* ============================================================
    FILTERS
    ============================================================ */
+function resetFilters() {
+  ['filter-scac','filter-program','filter-status','filter-domicile'].forEach(id => {
+    document.getElementById(id).value = 'All';
+  });
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value   = '';
+  document.getElementById('filter-search').value    = '';
+}
+
 function uniqueValues(col) {
   const set = new Set(rawData.map(r => String(r[col] ?? '').trim()).filter(Boolean));
   return ['All', ...Array.from(set).sort()];
@@ -698,14 +748,95 @@ function fillSelect(id, values) {
 });
 
 document.getElementById('btn-reset-filters').addEventListener('click', () => {
-  ['filter-scac','filter-program','filter-status','filter-domicile'].forEach(id => {
-    document.getElementById(id).value = 'All';
-  });
-  document.getElementById('filter-date-from').value = '';
-  document.getElementById('filter-date-to').value   = '';
-  document.getElementById('filter-search').value    = '';
+  resetFilters();
   applyFilters();
 });
+
+function setupKPIClickHandlers() {
+  // Helper to add clickable icon
+  const addClickableIcon = (card) => {
+    if (!card.querySelector('.clickable-icon')) {
+      const icon = document.createElement('i');
+      icon.className = 'bi bi-arrow-down-circle clickable-icon';
+      card.style.position = 'relative';
+      card.appendChild(icon);
+    }
+  };
+
+  // Total Vehicles - show all
+  const totalCard = document.querySelector('#kpi-total').closest('.kpi-card');
+  totalCard.style.cursor = 'pointer';
+  addClickableIcon(totalCard);
+  totalCard.addEventListener('click', () => {
+    resetFilters();
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Done - filter by "Done" status
+  const doneCard = document.querySelector('#kpi-done').closest('.kpi-card');
+  doneCard.style.cursor = 'pointer';
+  addClickableIcon(doneCard);
+  doneCard.addEventListener('click', () => {
+    resetFilters();
+    const statusSelect = document.getElementById('filter-status');
+    const doneOption = Array.from(statusSelect.options).find(opt => /done/i.test(opt.value));
+    if (doneOption) statusSelect.value = doneOption.value;
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Removed - filter by "Removed" status
+  const removedCard = document.querySelector('#kpi-removed').closest('.kpi-card');
+  removedCard.style.cursor = 'pointer';
+  addClickableIcon(removedCard);
+  removedCard.addEventListener('click', () => {
+    resetFilters();
+    const statusSelect = document.getElementById('filter-status');
+    const removedOption = Array.from(statusSelect.options).find(opt => /removed/i.test(opt.value));
+    if (removedOption) statusSelect.value = removedOption.value;
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Replaced - filter by "Replaced" status
+  const replacedCard = document.querySelector('#kpi-replaced').closest('.kpi-card');
+  replacedCard.style.cursor = 'pointer';
+  addClickableIcon(replacedCard);
+  replacedCard.addEventListener('click', () => {
+    resetFilters();
+    const statusSelect = document.getElementById('filter-status');
+    const replacedOption = Array.from(statusSelect.options).find(opt => /replaced/i.test(opt.value));
+    if (replacedOption) statusSelect.value = replacedOption.value;
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Scheduled - show only vehicles with scheduled dates
+  const scheduledCard = document.querySelector('#kpi-scheduled').closest('.kpi-card');
+  scheduledCard.style.cursor = 'pointer';
+  addClickableIcon(scheduledCard);
+  scheduledCard.addEventListener('click', () => {
+    resetFilters();
+    applyFilters();
+    // Apply custom filter for scheduled vehicles
+    filtered = filtered.filter(r => r[COL.scheduledDate]);
+    renderTable();
+    renderInstallTable();
+    scrollToVehicleRecords();
+  });
+}
+
+function scrollToVehicleRecords() {
+  const tableSection = document.querySelector('#data-table-wrapper').closest('.card');
+  tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Add a brief highlight effect
+  tableSection.style.boxShadow = '0 0 20px rgba(0, 48, 135, 0.5)';
+  setTimeout(() => {
+    tableSection.style.boxShadow = '';
+  }, 2000);
+}
 
 function applyFilters() {
   const scac     = document.getElementById('filter-scac').value;
