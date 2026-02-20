@@ -89,11 +89,6 @@
       .kpi-card .kpi-value { font-size: 1.6rem; }
     }
 
-    /* Tab navigation */
-    #dashboard-tabs .nav-link { color: var(--brand-blue); font-weight: 600; }
-    #dashboard-tabs .nav-link.active { background: var(--brand-blue); color: #fff; border-color: var(--brand-blue); }
-    #dashboard-tabs { border-bottom: 2px solid var(--brand-blue); }
-
     /* Installation detail table */
     #install-table { font-size: .78rem; white-space: nowrap; }
     #install-table thead th {
@@ -143,20 +138,6 @@
   <!-- ══════════ DASHBOARD (hidden until data loaded) ══════════ -->
   <div id="dashboard" class="d-none">
 
-    <!-- Tab Navigation -->
-    <ul class="nav nav-tabs mb-0" id="dashboard-tabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-overview-btn" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">
-          <i class="bi bi-speedometer2 me-1"></i>Overview Dashboard
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-install-btn" data-bs-toggle="tab" data-bs-target="#tab-install" type="button" role="tab">
-          <i class="bi bi-tools me-1"></i>Installation Details &amp; Equipment
-        </button>
-      </li>
-    </ul>
-
     <!-- Filters -->
     <div class="filter-bar shadow-sm mb-4">
       <div class="row g-2 align-items-end">
@@ -197,11 +178,8 @@
       </div>
     </div>
 
-    <div class="tab-content mt-3">
-    <!-- ══ TAB 1: OVERVIEW ══ -->
-    <div class="tab-pane fade show active" id="tab-overview">
-
-    <!-- KPI cards -->
+    <!-- ══ Section 1: Key Performance Indicators ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-speedometer2 me-2"></i>Key Performance Indicators</h5>
     <div class="row g-3 mb-4" id="kpi-row">
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--brand-blue)">
@@ -239,39 +217,95 @@
           <div class="kpi-label">Completion Rate</div>
         </div>
       </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0d6efd">
+          <div class="kpi-value" id="kpi2-vbus">0</div>
+          <div class="kpi-label">VBUS Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6610f2">
+          <div class="kpi-value" id="kpi2-ddt">0</div>
+          <div class="kpi-label">DDT Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#198754">
+          <div class="kpi-value" id="kpi2-camera">0</div>
+          <div class="kpi-label">Camera Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#fd7e14">
+          <div class="kpi-value" id="kpi2-haptic">0</div>
+          <div class="kpi-label">Haptic Seat Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#20c997">
+          <div class="kpi-value" id="kpi2-drvbtn">0</div>
+          <div class="kpi-label">Driver Button Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
+          <div class="kpi-value" id="kpi2-display">0</div>
+          <div class="kpi-label">Display Installs</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Charts row 1 -->
+    <!-- ══ Section 2: Compliance & Verification Rates ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-shield-check me-2"></i>Compliance &amp; Verification Rates</h5>
     <div class="row g-3 mb-4">
-      <div class="col-12 col-md-6 col-xl-4">
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--brand-blue)">
+          <div class="kpi-value" id="kpi2-sop">0%</div>
+          <div class="kpi-label">SOP Compliance</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
+          <div class="kpi-value" id="kpi2-idms">0%</div>
+          <div class="kpi-label">IDMS Verification</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--replaced-color)">
+          <div class="kpi-value" id="kpi2-can">0%</div>
+          <div class="kpi-label">CAN Check Pass</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
+          <div class="kpi-value" id="kpi2-otr">0%</div>
+          <div class="kpi-label">OTR Test Complete</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 3: Status & Distribution ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-pie-chart me-2"></i>Status &amp; Distribution</h5>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-xl-3">
         <div class="card chart-card shadow-sm p-3 h-100">
           <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-1"></i>Campaign Status</h6>
           <canvas id="chart-status"></canvas>
         </div>
       </div>
-      <div class="col-12 col-md-6 col-xl-4">
+      <div class="col-12 col-md-6 col-xl-3">
         <div class="card chart-card shadow-sm p-3 h-100">
           <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installs by SCAC</h6>
           <canvas id="chart-scac"></canvas>
         </div>
       </div>
-      <div class="col-12 col-md-12 col-xl-4">
+      <div class="col-12 col-md-6 col-xl-3">
         <div class="card chart-card shadow-sm p-3 h-100">
           <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installs by Program</h6>
           <canvas id="chart-program"></canvas>
         </div>
       </div>
-    </div>
-
-    <!-- Charts row 2 -->
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-xl-8">
-        <div class="card chart-card shadow-sm p-3 h-100">
-          <h6 class="section-title mb-3"><i class="bi bi-graph-up me-1"></i>Daily Installation Trend (Done)</h6>
-          <canvas id="chart-trend" style="max-height:220px"></canvas>
-        </div>
-      </div>
-      <div class="col-12 col-xl-4">
+      <div class="col-12 col-md-6 col-xl-3">
         <div class="card chart-card shadow-sm p-3 h-100">
           <h6 class="section-title mb-3"><i class="bi bi-bar-chart-steps me-1"></i>Installs by Body Type</h6>
           <canvas id="chart-bodytype"></canvas>
@@ -279,7 +313,48 @@
       </div>
     </div>
 
-    <!-- Data Table -->
+    <!-- ══ Section 4: Installation & Equipment Analysis ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-tools me-2"></i>Installation &amp; Equipment Analysis</h5>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installation Type Distribution</h6>
+          <canvas id="chart-install-type" style="max-height:280px"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-1"></i>Verification Status</h6>
+          <canvas id="chart-verification" style="max-height:280px"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-camera-fill me-1"></i>External Camera Installs</h6>
+          <canvas id="chart-ext-cam" style="max-height:280px"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-check2-circle me-1"></i>Test Results Summary</h6>
+          <canvas id="chart-test-results" style="max-height:280px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 5: Installation Trends ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-graph-up me-2"></i>Installation Trends</h5>
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card chart-card shadow-sm p-3">
+          <h6 class="section-title mb-3"><i class="bi bi-graph-up me-1"></i>Daily Installation Trend (Done)</h6>
+          <canvas id="chart-trend" style="max-height:220px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 6: Data Tables ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-table me-2"></i>Vehicle Records</h5>
     <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
       <div class="card-header bg-white border-bottom d-flex align-items-center gap-2" style="border-radius:12px 12px 0 0">
         <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>Vehicle Records</h6>
@@ -295,143 +370,26 @@
       </div>
     </div>
 
-    </div><!-- /tab-overview -->
-
-    <!-- ══ TAB 2: INSTALLATION DETAILS & EQUIPMENT ══ -->
-    <div class="tab-pane fade" id="tab-install">
-
-      <!-- Equipment Installation Count KPIs -->
-      <h6 class="section-title mb-3"><i class="bi bi-tools me-1"></i>Equipment Installation Counts</h6>
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-md-4 col-xl-2">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0d6efd">
-            <div class="kpi-value" id="kpi2-vbus">0</div>
-            <div class="kpi-label">VBUS Installs</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6610f2">
-            <div class="kpi-value" id="kpi2-ddt">0</div>
-            <div class="kpi-label">DDT Installs</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:#198754">
-            <div class="kpi-value" id="kpi2-camera">0</div>
-            <div class="kpi-label">Camera Installs</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:#fd7e14">
-            <div class="kpi-value" id="kpi2-haptic">0</div>
-            <div class="kpi-label">Haptic Seat Installs</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:#20c997">
-            <div class="kpi-value" id="kpi2-drvbtn">0</div>
-            <div class="kpi-label">Driver Button Installs</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
-            <div class="kpi-value" id="kpi2-display">0</div>
-            <div class="kpi-label">Display Installs</div>
-          </div>
-        </div>
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-table me-2"></i>Installation Details</h5>
+    <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
+      <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 flex-wrap" style="border-radius:12px 12px 0 0">
+        <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>Installation Details</h6>
+        <span class="badge bg-secondary ms-1" id="install-table-count-badge">0</span>
+        <div class="ms-auto small text-muted">Showing up to <strong>1,000</strong> rows</div>
+        <button class="btn btn-sm btn-success ms-2" id="btn-export-install-csv"><i class="bi bi-download me-1"></i>Export Installation Details CSV</button>
       </div>
-
-      <!-- Compliance & Verification Rate KPIs -->
-      <h6 class="section-title mb-3"><i class="bi bi-shield-check me-1"></i>Compliance &amp; Verification Rates</h6>
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--brand-blue)">
-            <div class="kpi-value" id="kpi2-sop">0%</div>
-            <div class="kpi-label">SOP Compliance</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
-            <div class="kpi-value" id="kpi2-idms">0%</div>
-            <div class="kpi-label">IDMS Verification</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--replaced-color)">
-            <div class="kpi-value" id="kpi2-can">0%</div>
-            <div class="kpi-label">CAN Check Pass</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
-            <div class="kpi-value" id="kpi2-otr">0%</div>
-            <div class="kpi-label">OTR Test Complete</div>
-          </div>
-        </div>
+      <div class="d-flex gap-3 p-2 ps-3 flex-wrap align-items-center border-bottom">
+        <small class="text-muted"><span class="badge" style="background:#f8d7da;color:#842029">&nbsp;&nbsp;&nbsp;</span> Missing critical data</small>
+        <small class="text-muted"><span class="badge" style="background:#fff3cd;color:#664d03">&nbsp;&nbsp;&nbsp;</span> Missing important data</small>
       </div>
-
-      <!-- Charts Row 1 -->
-      <div class="row g-3 mb-4">
-        <div class="col-12 col-md-6">
-          <div class="card chart-card shadow-sm p-3 h-100">
-            <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installation Type Distribution</h6>
-            <canvas id="chart-install-type" style="max-height:280px"></canvas>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="card chart-card shadow-sm p-3 h-100">
-            <h6 class="section-title mb-3"><i class="bi bi-bar-chart-steps me-1"></i>Top 15 Parts Usage</h6>
-            <canvas id="chart-parts-usage" style="max-height:280px"></canvas>
-          </div>
-        </div>
+      <div id="install-table-wrapper" class="p-0" style="max-height:500px;overflow-y:auto;overflow-x:auto">
+        <table class="table table-sm table-hover mb-0" id="install-table">
+          <thead><tr id="install-table-head-row"></tr></thead>
+          <tbody id="install-table-body"></tbody>
+        </table>
+        <p id="install-no-data-msg" class="text-center text-muted py-4" style="display:none">No records match your filters.</p>
       </div>
-
-      <!-- Charts Row 2 -->
-      <div class="row g-3 mb-4">
-        <div class="col-12 col-md-4">
-          <div class="card chart-card shadow-sm p-3 h-100">
-            <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-1"></i>Verification Status</h6>
-            <canvas id="chart-verification" style="max-height:280px"></canvas>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="card chart-card shadow-sm p-3 h-100">
-            <h6 class="section-title mb-3"><i class="bi bi-camera-fill me-1"></i>External Camera Installs</h6>
-            <canvas id="chart-ext-cam" style="max-height:280px"></canvas>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="card chart-card shadow-sm p-3 h-100">
-            <h6 class="section-title mb-3"><i class="bi bi-check2-circle me-1"></i>Test Results Summary</h6>
-            <canvas id="chart-test-results" style="max-height:280px"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- Installation Detail Table -->
-      <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
-        <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 flex-wrap" style="border-radius:12px 12px 0 0">
-          <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>Installation Details</h6>
-          <span class="badge bg-secondary ms-1" id="install-table-count-badge">0</span>
-          <div class="ms-auto small text-muted">Showing up to <strong>1,000</strong> rows</div>
-          <button class="btn btn-sm btn-success ms-2" id="btn-export-install-csv"><i class="bi bi-download me-1"></i>Export Installation Details CSV</button>
-        </div>
-        <div class="d-flex gap-3 p-2 ps-3 flex-wrap align-items-center border-bottom">
-          <small class="text-muted"><span class="badge" style="background:#f8d7da;color:#842029">&nbsp;&nbsp;&nbsp;</span> Missing critical data</small>
-          <small class="text-muted"><span class="badge" style="background:#fff3cd;color:#664d03">&nbsp;&nbsp;&nbsp;</span> Missing important data</small>
-        </div>
-        <div id="install-table-wrapper" class="p-0" style="max-height:500px;overflow-y:auto;overflow-x:auto">
-          <table class="table table-sm table-hover mb-0" id="install-table">
-            <thead><tr id="install-table-head-row"></tr></thead>
-            <tbody id="install-table-body"></tbody>
-          </table>
-          <p id="install-no-data-msg" class="text-center text-muted py-4" style="display:none">No records match your filters.</p>
-        </div>
-      </div>
-
-    </div><!-- /tab-install -->
-
-    </div><!-- /tab-content -->
+    </div>
 
   </div><!-- /dashboard -->
 </div><!-- /container -->
@@ -538,7 +496,7 @@ let currentFileSize  = 0;
 let currentUploadTime = null;
 
 let chartStatus, chartScac, chartProgram, chartTrend, chartBodyType;
-let chartInstallType, chartPartsUsage, chartVerification, chartExtCam, chartTestResults;
+let chartInstallType, chartVerification, chartExtCam, chartTestResults;
 
 /* ============================================================
    UPLOAD HANDLING
@@ -1162,21 +1120,7 @@ function renderTab2Charts() {
     { indexAxis: 'y', plugins: { legend: { display: true, position: 'top' } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 
-  /* 2. Parts Usage – Top 15 */
-  const partsMap = {};
-  filtered.forEach(r => {
-    PART_COLS.forEach(col => {
-      const v = String(r[col] ?? '').trim();
-      if (v) partsMap[v] = (partsMap[v] || 0) + 1;
-    });
-  });
-  const partsEntries = sortedEntries(partsMap, 15);
-  chartPartsUsage = getOrCreate('chart-parts-usage', 'bar',
-    { labels: partsEntries.map(e => e[0]), datasets: [{ label: 'Usage Count', data: partsEntries.map(e => e[1]), backgroundColor: '#003087' }] },
-    { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
-  );
-
-  /* 3. Verification Status (Doughnut) */
+  /* 2. Verification Status (Doughnut) */
   const idmsVerified    = filtered.filter(r => String(r[COL.verifiedIDMS] ?? '').trim()).length;
   const idmsNotVerified = filtered.length - idmsVerified;
   const canComplete     = filtered.filter(r => String(r[COL.canCheck]     ?? '').trim()).length;
@@ -1250,11 +1194,6 @@ function renderInstallTable() {
     return `<tr>${cells}</tr>`;
   }).join('');
 }
-
-/* Re-render Tab 2 charts when the tab becomes visible (fixes sizing) */
-document.getElementById('tab-install-btn').addEventListener('shown.bs.tab', () => {
-  if (filtered.length) renderTab2Charts();
-});
 
 /* Export Installation Details CSV */
 document.getElementById('btn-export-install-csv').addEventListener('click', () => {
