@@ -821,12 +821,62 @@ function renderCharts() {
 
 /* ============================================================
    DATA VALIDATION – completion percentage per vehicle
+   Only the fields below are considered "fillable" for completion tracking.
    ============================================================ */
+const COMPLETION_COLS = [
+  COL.sopNeed,
+  COL.cableHarness,
+  COL.canalyzer,
+  COL.vbusSerial,
+  COL.vbusInstall,
+  COL.vbusPart,
+  COL.ddtInstall,
+  COL.ddtSerial,
+  COL.ddtPart,
+  COL.ddtBracket,
+  COL.hapticSeat,
+  COL.hapticPart,
+  COL.cameraModel,
+  COL.newCameraSerial,
+  COL.removedCamera,
+  COL.d450Part,
+  COL.dr20Part,
+  COL.extCameras,
+  COL.l2CamPart,
+  COL.l2CamSerial,
+  COL.r1CamPart,
+  COL.r1CamSerial,
+  COL.r2CamPart,
+  COL.r2CamSerial,
+  COL.boCamPart,
+  COL.boCamSerial,
+  COL.extCamBracket,
+  COL.inVehicleDisp,
+  COL.displayPart,
+  COL.driverBtn,
+  COL.driverBtnPart,
+  COL.verifiedIDMS,
+  COL.canCheck,
+  COL.busLoad,
+  COL.preBusLoad,
+  COL.tracedBus,
+  COL.otrTest,
+  COL.idmsPortal,
+  COL.netradyne,
+  COL.xirgo,
+  COL.geotab,
+  COL.truckWings,
+  COL.mirrorEye,
+  COL.tda,
+];
+
 function computeCompletion(row) {
-  const vals = Object.values(row);
-  if (!vals.length) return 0;
-  const filled = vals.filter(v => v !== '' && v !== null && v !== undefined).length;
-  return Math.round(filled / vals.length * 100);
+  if (!COMPLETION_COLS.length) return 0;
+  const filled = COMPLETION_COLS.filter(col => {
+    const v = row[col];
+    return v !== '' && v !== null && v !== undefined;
+  }).length;
+  return Math.round(filled / COMPLETION_COLS.length * 100);
 }
 
 function completionBadge(pct) {
