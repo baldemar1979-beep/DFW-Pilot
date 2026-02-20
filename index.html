@@ -1315,7 +1315,8 @@ function renderInstallTable() {
   const badge  = document.getElementById('install-table-count-badge');
   const noData = document.getElementById('install-no-data-msg');
 
-  const available = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined && r[c] !== ''));
+  // Use !== undefined (not !== '') so columns present-but-blank in the CSV still appear
+  const available = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined));
   const showDuration = available.includes(COL.startTs) && available.includes(COL.endTs);
 
   const headCells = ['<th>Completion</th>'];
@@ -1357,7 +1358,8 @@ function renderInstallTable() {
 /* Export Installation Details CSV */
 document.getElementById('btn-export-install-csv').addEventListener('click', () => {
   if (!filtered.length) return;
-  const cols = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined && r[c] !== ''));
+  // Use !== undefined (not !== '') so columns present-but-blank in the CSV still appear
+  const cols = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined));
   const showDuration = cols.includes(COL.startTs) && cols.includes(COL.endTs);
   const endTsIdx = cols.indexOf(COL.endTs);
   const headerRow = ['Completion', ...cols.map(csvCell)];
