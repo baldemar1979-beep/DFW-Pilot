@@ -77,29 +77,12 @@
     .chart-card { border-radius: 12px; border: none; background: #fff; }
     .chart-card canvas { max-height: 280px; }
 
-    /* Data table */
-    #data-table-wrapper { overflow-x: auto; border-radius: 12px; background: #fff; }
-    #data-table { font-size: .8rem; white-space: nowrap; }
-    #data-table thead th {
-      position: sticky; top: 0; z-index: 2;
-      background: var(--brand-blue); color: #fff;
-      font-weight: 600; padding: 8px 10px;
-    }
-    #data-table tbody tr:hover { background: #eef3ff; }
-    .badge-done { background: var(--done-color); }
-    .badge-removed { background: var(--removed-color); }
-    .badge-replaced { background: var(--replaced-color); }
-    .badge-other { background: var(--other-color); }
-
     /* Filter bar */
     .filter-bar { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
     .filter-bar select, .filter-bar input { font-size: .85rem; }
 
     /* Section headers */
     .section-title { font-weight: 700; color: var(--brand-blue); letter-spacing: .3px; }
-
-    /* Trend info */
-    #no-data-msg { display: none; }
 
     /* Upload metadata */
     #upload-meta { font-size: .85rem; }
@@ -380,23 +363,7 @@
       </div>
     </div>
 
-    <!-- ══ Section 6: Data Tables ══ -->
-    <h5 class="section-title mb-3 mt-4"><i class="bi bi-table me-2"></i>Vehicle Records</h5>
-    <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
-      <div class="card-header bg-white border-bottom d-flex align-items-center gap-2" style="border-radius:12px 12px 0 0">
-        <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>Vehicle Records</h6>
-        <span class="badge bg-secondary ms-1" id="table-count-badge">0</span>
-        <div class="ms-auto small text-muted">Showing up to <strong>1,000</strong> rows</div>
-      </div>
-      <div id="data-table-wrapper" class="p-0" style="max-height:480px;overflow-y:auto">
-        <table class="table table-sm table-hover mb-0" id="data-table">
-          <thead><tr id="table-head-row"></tr></thead>
-          <tbody id="table-body"></tbody>
-        </table>
-        <p id="no-data-msg" class="text-center text-muted py-4">No records match your filters.</p>
-      </div>
-    </div>
-
+    <!-- ══ Section 5: Installation Details ══ -->
     <h5 class="section-title mb-3 mt-4"><i class="bi bi-table me-2"></i>Installation Details</h5>
     <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
       <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 flex-wrap" style="border-radius:12px 12px 0 0">
@@ -827,14 +794,13 @@ function setupKPIClickHandlers() {
     applyFilters();
     // Apply custom filter for scheduled vehicles
     filtered = filtered.filter(r => r[COL.scheduledDate]);
-    renderTable();
     renderInstallTable();
     scrollToVehicleRecords();
   });
 }
 
 function scrollToVehicleRecords() {
-  const tableSection = document.querySelector('#data-table-wrapper').closest('.card');
+  const tableSection = document.querySelector('#install-table-wrapper').closest('.card');
   tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   // Add a brief highlight effect
@@ -880,7 +846,6 @@ function applyFilters() {
 
   renderKPIs();
   renderCharts();
-  renderTable();
   renderTab2KPIs();
   renderTab2Charts();
   renderInstallTable();
@@ -1080,54 +1045,6 @@ function completionBadge(pct) {
    TABLE
    ============================================================ */
 /* Key columns shown by default (first 12 to keep table readable) */
-const KEY_COLS = [
-  COL.equipmentId, COL.program, COL.scac, COL.status,
-  COL.scheduledDate, COL.domicile, COL.vin, COL.manufacture,
-  COL.model, COL.modelYear, COL.bodyType, COL.verifiedIDMS,
-];
-
-function statusBadge(val) {
-  const v = String(val ?? '').trim();
-  if (/done/i.test(v))     return `<span class="badge badge-done">${v}</span>`;
-  if (/removed/i.test(v))  return `<span class="badge badge-removed">${v}</span>`;
-  if (/replaced/i.test(v)) return `<span class="badge badge-replaced">${v}</span>`;
-  return v ? `<span class="badge badge-other">${v}</span>` : '';
-}
-
-function renderTable() {
-  const head   = document.getElementById('table-head-row');
-  const body   = document.getElementById('table-body');
-  const badge  = document.getElementById('table-count-badge');
-  const noData = document.getElementById('no-data-msg');
-
-  /* Determine columns available in this dataset */
-  const available = KEY_COLS.filter(c => rawData.some(r => r[c] !== undefined && r[c] !== ''));
-
-  // Completion column + data columns
-  head.innerHTML = '<th>Completion</th>' + available.map(c => `<th>${c}</th>`).join('');
-
-  const rows = filtered.slice(0, 1000);
-  badge.textContent = filtered.length.toLocaleString();
-
-  if (!rows.length) {
-    body.innerHTML = '';
-    noData.style.display = 'block';
-    return;
-  }
-  noData.style.display = 'none';
-
-  body.innerHTML = rows.map(r => {
-    const pct = computeCompletion(r);
-    const completionCell = `<td>${completionBadge(pct)}</td>`;
-    const cells = available.map(c => {
-      if (c === COL.status)        return `<td>${statusBadge(r[c])}</td>`;
-      if (c === COL.scheduledDate) return `<td>${toDateStr(r[c])}</td>`;
-      return `<td>${escHtml(String(r[c] ?? ''))}</td>`;
-    }).join('');
-    return `<tr>${completionCell}${cells}</tr>`;
-  }).join('');
-}
-
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
