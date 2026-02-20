@@ -1300,7 +1300,7 @@ function renderInstallTable() {
   const noData = document.getElementById('install-no-data-msg');
 
   const available = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined && r[c] !== ''));
-  head.innerHTML = available.map(c => `<th>${escHtml(c)}</th>`).join('');
+  head.innerHTML = '<th>Completion</th>' + available.map(c => `<th>${escHtml(c)}</th>`).join('');
 
   const rows = filtered.slice(0, 1000);
   badge.textContent = filtered.length.toLocaleString();
@@ -1313,6 +1313,7 @@ function renderInstallTable() {
   noData.style.display = 'none';
 
   body.innerHTML = rows.map(r => {
+    const completionCell = `<td>${completionBadge(computeCompletion(r))}</td>`;
     const cells = available.map(c => {
       const v = String(r[c] ?? '');
       const isEmpty = !v.trim();
@@ -1322,7 +1323,7 @@ function renderInstallTable() {
       if (c === COL.scheduledDate) return `<td${cls}>${toDateStr(r[c])}</td>`;
       return `<td${cls}>${escHtml(v)}</td>`;
     }).join('');
-    return `<tr>${cells}</tr>`;
+    return `<tr>${completionCell}${cells}</tr>`;
   }).join('');
 }
 
@@ -1330,9 +1331,9 @@ function renderInstallTable() {
 document.getElementById('btn-export-install-csv').addEventListener('click', () => {
   if (!filtered.length) return;
   const cols = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined && r[c] !== ''));
-  const lines = [cols.map(csvCell).join(',')];
+  const lines = [['Completion', ...cols.map(csvCell)].join(',')];
   filtered.forEach(r => {
-    lines.push(cols.map(c => csvCell(String(r[c] ?? ''))).join(','));
+    lines.push([csvCell(computeCompletion(r) + '%'), ...cols.map(c => csvCell(String(r[c] ?? '')))].join(','));
   });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
   const a = document.createElement('a');
