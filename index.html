@@ -1152,9 +1152,14 @@ function renderTab2Charts() {
     'Driver Button':      filtered.filter(r => String(r[COL.driverBtn]     ?? '').trim()).length,
     'In-Vehicle Display': filtered.filter(r => String(r[COL.inVehicleDisp] ?? '').trim()).length,
   };
+  const installLabels = Object.keys(installCounts);
+  const installTotals = installLabels.map(() => filtered.length);
   chartInstallType = getOrCreate('chart-install-type', 'bar',
-    { labels: Object.keys(installCounts), datasets: [{ label: 'Installations', data: Object.values(installCounts), backgroundColor: PALETTE }] },
-    { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+    { labels: installLabels, datasets: [
+        { label: 'Total Vehicles', data: installTotals, backgroundColor: 'rgba(173,181,189,0.5)', borderColor: '#adb5bd', borderWidth: 1 },
+        { label: 'Installs',       data: Object.values(installCounts), backgroundColor: PALETTE },
+    ]},
+    { indexAxis: 'y', plugins: { legend: { display: true, position: 'top' } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 
   /* 2. Parts Usage – Top 15 */
