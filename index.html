@@ -95,6 +95,8 @@
     /* Footer */
     footer { font-size: .78rem; color: #6c757d; }
 
+    .kpi-card.kpi-danger { background: var(--removed-color) !important; }
+
     @media (max-width: 768px) {
       .kpi-card .kpi-value { font-size: 1.6rem; }
     }
@@ -261,6 +263,18 @@
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
           <div class="kpi-value" id="kpi2-display">0</div>
           <div class="kpi-label">Display Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d450-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d450">—</div>
+          <div class="kpi-label">Median D450 Install Time (hrs)</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d810-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d810">—</div>
+          <div class="kpi-label">Median D810 Install Time (hrs)</div>
         </div>
       </div>
     </div>
@@ -475,6 +489,8 @@ const COL = {
   truckWings    : 'Truck Wings',
   mirrorEye     : 'MirrorEye',
   tda           : 'Tractor DriverAssist (TDA)',
+  startTs       : 'Start Timestamp (to be entered by Vendor)',
+  endTs         : 'End Timestamp (to be entered by Vendor)',
 };
 
 /* All column labels in display order */
@@ -868,6 +884,51 @@ function toDateStr(val) {
 }
 
 /* ============================================================
+   TIMESTAMP & DURATION HELPERS
+   ============================================================ */
+const MS_PER_HOUR = 3600000;
+const D450_THRESHOLD_HOURS = 3.0;
+const D810_THRESHOLD_HOURS = 6.0;
+
+function parseTimestamp(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+  // Handle M/D/YY or M/D/YYYY with H:MM [AM/PM]
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (m) {
+    let yr = parseInt(m[3]);
+    if (yr < 100) yr += (yr < 50 ? 2000 : 1900);
+    let hr = parseInt(m[4]);
+    const mi = parseInt(m[5]);
+    const se = parseInt(m[6] || 0);
+    const ap = m[7] ? m[7].toUpperCase() : null;
+    if (ap === 'PM' && hr < 12) hr += 12;
+    if (ap === 'AM' && hr === 12) hr = 0;
+    const d = new Date(yr, parseInt(m[1]) - 1, parseInt(m[2]), hr, mi, se);
+    return isNaN(d) ? null : d;
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+function computeInstallDuration(row) {
+  const start = parseTimestamp(row[COL.startTs]);
+  const end   = parseTimestamp(row[COL.endTs]);
+  if (!start || !end) return null;
+  const hours = (end - start) / MS_PER_HOUR;
+  return hours > 0 ? hours : null;
+}
+
+function computeMedian(arr) {
+  if (!arr.length) return null;
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/* ============================================================
    KPI CARDS
    ============================================================ */
 function renderKPIs() {
@@ -1028,6 +1089,8 @@ const COMPLETION_COLS = [
   COL.truckWings,
   COL.mirrorEye,
   COL.tda,
+  COL.startTs,
+  COL.endTs,
 ];
 
 function computeCompletion(row) {
@@ -1098,6 +1161,7 @@ const INSTALL_COLS = [
   COL.busLoad, COL.preBusLoad, COL.tracedBus,
   COL.otrTest, COL.idmsPortal, COL.netradyne,
   COL.xirgo, COL.geotab, COL.truckWings, COL.mirrorEye, COL.tda,
+  COL.startTs, COL.endTs,
 ];
 
 /* Critical fields: empty = light red highlight */
@@ -1149,6 +1213,38 @@ function renderTab2KPIs() {
   document.getElementById('kpi2-idms').textContent = pct(idmsCount) + '%';
   document.getElementById('kpi2-can').textContent  = pct(canCount)  + '%';
   document.getElementById('kpi2-otr').textContent  = pct(otrCount)  + '%';
+
+  /* Median install time KPIs */
+  const d450Durations = filtered
+    .filter(r => /d450/i.test(String(r[COL.products] ?? '')))
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+  const d810Durations = filtered
+    .filter(r => /d810/i.test(String(r[COL.products] ?? '')))
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+
+  const medianD450 = computeMedian(d450Durations);
+  const medianD810 = computeMedian(d810Durations);
+
+  const d450Card = document.getElementById('kpi-median-d450-card');
+  const d810Card = document.getElementById('kpi-median-d810-card');
+
+  if (medianD450 === null) {
+    document.getElementById('kpi-median-d450').textContent = '—';
+    d450Card.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d450').textContent = medianD450.toFixed(2);
+    d450Card.classList.toggle('kpi-danger', medianD450 >= D450_THRESHOLD_HOURS);
+  }
+
+  if (medianD810 === null) {
+    document.getElementById('kpi-median-d810').textContent = '—';
+    d810Card.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d810').textContent = medianD810.toFixed(2);
+    d810Card.classList.toggle('kpi-danger', medianD810 >= D810_THRESHOLD_HOURS);
+  }
 }
 
 function renderTab2Charts() {
@@ -1220,7 +1316,14 @@ function renderInstallTable() {
   const noData = document.getElementById('install-no-data-msg');
 
   const available = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined && r[c] !== ''));
-  head.innerHTML = '<th>Completion</th>' + available.map(c => `<th>${escHtml(c)}</th>`).join('');
+  const showDuration = available.includes(COL.startTs) && available.includes(COL.endTs);
+
+  const headCells = ['<th>Completion</th>'];
+  available.forEach(c => {
+    headCells.push(`<th>${escHtml(c)}</th>`);
+    if (showDuration && c === COL.endTs) headCells.push('<th>Install Duration (hrs)</th>');
+  });
+  head.innerHTML = headCells.join('');
 
   const rows = filtered.slice(0, 1000);
   badge.textContent = filtered.length.toLocaleString();
@@ -1234,15 +1337,19 @@ function renderInstallTable() {
 
   body.innerHTML = rows.map(r => {
     const completionCell = `<td>${completionBadge(computeCompletion(r))}</td>`;
-    const cells = available.map(c => {
+    let cells = '';
+    available.forEach(c => {
       const v = String(r[c] ?? '');
       const isEmpty = !v.trim();
       let cls = '';
       if (isEmpty && CRITICAL_FIELDS.has(c))  cls = ' class="cell-critical"';
       else if (isEmpty && IMPORTANT_FIELDS.has(c)) cls = ' class="cell-missing"';
-      if (c === COL.scheduledDate) return `<td${cls}>${toDateStr(r[c])}</td>`;
-      return `<td${cls}>${escHtml(v)}</td>`;
-    }).join('');
+      cells += c === COL.scheduledDate ? `<td${cls}>${toDateStr(r[c])}</td>` : `<td${cls}>${escHtml(v)}</td>`;
+      if (showDuration && c === COL.endTs) {
+        const dur = computeInstallDuration(r);
+        cells += `<td>${dur !== null ? dur.toFixed(2) : ''}</td>`;
+      }
+    });
     return `<tr>${completionCell}${cells}</tr>`;
   }).join('');
 }
@@ -1251,9 +1358,18 @@ function renderInstallTable() {
 document.getElementById('btn-export-install-csv').addEventListener('click', () => {
   if (!filtered.length) return;
   const cols = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined && r[c] !== ''));
-  const lines = [['Completion', ...cols.map(csvCell)].join(',')];
+  const showDuration = cols.includes(COL.startTs) && cols.includes(COL.endTs);
+  const endTsIdx = cols.indexOf(COL.endTs);
+  const headerRow = ['Completion', ...cols.map(csvCell)];
+  if (showDuration && endTsIdx >= 0) headerRow.splice(endTsIdx + 2, 0, csvCell('Install Duration (hrs)'));
+  const lines = [headerRow.join(',')];
   filtered.forEach(r => {
-    lines.push([csvCell(computeCompletion(r) + '%'), ...cols.map(c => csvCell(String(r[c] ?? '')))].join(','));
+    const dataRow = [csvCell(computeCompletion(r) + '%'), ...cols.map(c => csvCell(String(r[c] ?? '')))];
+    if (showDuration && endTsIdx >= 0) {
+      const dur = computeInstallDuration(r);
+      dataRow.splice(endTsIdx + 2, 0, csvCell(dur !== null ? dur.toFixed(2) : ''));
+    }
+    lines.push(dataRow.join(','));
   });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
   const a = document.createElement('a');
