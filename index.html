@@ -521,6 +521,7 @@ let filtered  = [];   // rows after applying filters
 let currentFilename  = '';
 let currentFileSize  = 0;
 let currentUploadTime = null;
+let activeCompletionCols = []; // subset of COMPLETION_COLS present in the loaded file
 
 let chartStatus, chartScac, chartProgram, chartTrend, chartBodyType;
 let chartInstallType, chartVerification, chartExtCam, chartTestResults;
@@ -702,6 +703,11 @@ function initDashboard() {
 
   // Reset filters before populating with new data
   resetFilters();
+
+  // Determine which completion columns are present in this file
+  activeCompletionCols = COMPLETION_COLS.filter(col =>
+    rawData.some(r => r[col] !== undefined)
+  );
 
   populateFilters();
   applyFilters();
@@ -1060,12 +1066,9 @@ const COMPLETION_COLS = [
 ];
 
 function computeCompletion(row) {
-  if (!COMPLETION_COLS.length) return 0;
-  const filled = COMPLETION_COLS.filter(col => {
-    const v = row[col];
-    return v !== '' && v !== null && v !== undefined;
-  }).length;
-  return Math.round(filled / COMPLETION_COLS.length * 100);
+  if (!activeCompletionCols.length) return 0;
+  const filled = activeCompletionCols.filter(col => hasValue(row[col])).length;
+  return Math.round(filled / activeCompletionCols.length * 100);
 }
 
 function completionBadge(pct) {
