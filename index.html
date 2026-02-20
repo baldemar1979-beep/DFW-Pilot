@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DFW Pilot – Installation Tracking Dashboard</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- SheetJS (xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --brand-blue: #003087;
+      --brand-gold: #f5a623;
+      --done-color: #198754;
+      --removed-color: #dc3545;
+      --replaced-color: #fd7e14;
+      --other-color: #6c757d;
+    }
+    body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background: var(--brand-blue) !important; }
+    .navbar-brand { color: #fff !important; font-weight: 700; letter-spacing: .5px; }
+    .navbar-brand span { color: var(--brand-gold); }
+
+    /* Upload zone */
+    #upload-zone {
+      border: 3px dashed #adb5bd;
+      border-radius: 12px;
+      background: #fff;
+      transition: border-color .25s, background .25s;
+      cursor: pointer;
+    }
+    #upload-zone.dragover { border-color: var(--brand-blue); background: #e8f0ff; }
+    #upload-zone .upload-icon { font-size: 1.5rem; color: #adb5bd; }
+    #file-input { display: none; }
+
+    /* KPI cards */
+    .kpi-card {
+      border-radius: 12px;
+      border: none;
+      transition: transform .2s, box-shadow .2s;
+      cursor: default;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    }
+
+    .kpi-card[style*="cursor: pointer"]:hover {
+      box-shadow: 0 8px 20px rgba(0, 48, 135, 0.3) !important;
+    }
+
+    .kpi-card .clickable-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 1rem;
+      opacity: 0.7;
+      transition: opacity .2s;
+    }
+
+    .kpi-card:hover .clickable-icon {
+      opacity: 1;
+    }
+
+    .kpi-card .kpi-value { font-size: 2.2rem; font-weight: 700; }
+    .kpi-card .kpi-label { font-size: .85rem; text-transform: uppercase; letter-spacing: .8px; opacity: .85; }
+
+    /* Charts */
+    .chart-card { border-radius: 12px; border: none; background: #fff; }
+    .chart-card canvas { max-height: 280px; }
+
+    /* Filter bar */
+    .filter-bar { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .filter-bar select, .filter-bar input { font-size: .85rem; }
+
+    /* Section headers */
+    .section-title { font-weight: 700; color: var(--brand-blue); letter-spacing: .3px; }
+
+    /* Upload metadata */
+    #upload-meta { font-size: .85rem; }
+
+    /* Completion badges */
+    .completion-high   { background: var(--done-color) !important; }
+    .completion-medium { background: var(--brand-gold) !important; color: #333 !important; }
+    .completion-low    { background: var(--removed-color) !important; }
+
+    /* Footer */
+    footer { font-size: .78rem; color: #6c757d; }
+
+    .kpi-card.kpi-danger { background: var(--removed-color) !important; }
+
+    @media (max-width: 768px) {
+      .kpi-card .kpi-value { font-size: 1.6rem; }
+    }
+
+    /* Installation detail table */
+    #install-table { font-size: .78rem; white-space: nowrap; }
+    #install-table thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: var(--brand-blue); color: #fff;
+      font-weight: 600; padding: 8px 10px;
+    }
+    #install-table tbody tr:hover { background: #eef3ff; }
+    .cell-missing  { background: #fff3cd !important; }
+    .cell-critical { background: #f8d7da !important; }
+  </style>
+</head>
+
+<body>
+<!-- ══════════ NAVBAR ══════════ -->
+<nav class="navbar navbar-expand-lg shadow-sm mb-4">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand"><i class="bi bi-truck me-2"></i>DFW <span>Pilot</span> Dashboard</span>
+    <span class="text-white-50 small ms-auto" id="last-updated"></span>
+  </div>
+</nav>
+
+<div class="container-fluid px-4">
+
+  <!-- ══════════ UPLOAD ZONE ══════════ -->
+  <div id="upload-section" class="mb-4">
+    <div id="upload-zone" class="p-2 d-flex align-items-center gap-3" role="button" tabindex="0" aria-label="Upload End-of-Shift Excel file – drag and drop or click to browse" onclick="document.getElementById('file-input').click()" onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('file-input').click()">
+      <div class="upload-icon"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+      <span class="fw-semibold text-secondary small">Upload End-of-Shift Excel File</span>
+      <button class="btn btn-outline-primary btn-sm px-3 ms-auto" onclick="event.stopPropagation();document.getElementById('file-input').click()">
+        <i class="bi bi-upload me-1"></i>Choose File
+      </button>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" />
+    </div>
+    <div id="upload-error" class="alert alert-danger mt-2 d-none"></div>
+    <!-- File metadata (shown after upload) -->
+    <div id="upload-meta" class="d-none mt-2 p-3 bg-white rounded shadow-sm">
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <span><i class="bi bi-file-earmark-excel text-success me-1"></i><strong id="meta-filename"></strong></span>
+        <span class="text-muted"><i class="bi bi-clock me-1"></i><span id="meta-timestamp"></span></span>
+        <span class="text-muted"><i class="bi bi-hdd me-1"></i><span id="meta-filesize"></span></span>
+        <span class="text-muted"><i class="bi bi-people me-1"></i><span id="meta-count"></span> vehicle(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ DASHBOARD (hidden until data loaded) ══════════ -->
+  <div id="dashboard" class="d-none">
+
+    <!-- Filters -->
+    <div class="filter-bar shadow-sm mb-4">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-auto">
+          <label class="form-label fw-semibold small mb-1">SCAC</label>
+          <select id="filter-scac" class="form-select form-select-sm" style="min-width:130px"></select>
+        </div>
+        <div class="col-12 col-md-auto">
+          <label class="form-label fw-semibold small mb-1">Program</label>
+          <select id="filter-program" class="form-select form-select-sm" style="min-width:150px"></select>
+        </div>
+        <div class="col-12 col-md-auto">
+          <label class="form-label fw-semibold small mb-1">Campaign Status</label>
+          <select id="filter-status" class="form-select form-select-sm" style="min-width:160px"></select>
+        </div>
+        <div class="col-12 col-md-auto">
+          <label class="form-label fw-semibold small mb-1">Domicile</label>
+          <select id="filter-domicile" class="form-select form-select-sm" style="min-width:150px"></select>
+        </div>
+        <div class="col-12 col-md-auto">
+          <label class="form-label fw-semibold small mb-1">Scheduled Date From</label>
+          <input type="date" id="filter-date-from" class="form-control form-control-sm" />
+        </div>
+        <div class="col-12 col-md-auto">
+          <label class="form-label fw-semibold small mb-1">To</label>
+          <input type="date" id="filter-date-to" class="form-control form-control-sm" />
+        </div>
+        <div class="col-12 col-md-auto">
+          <label class="form-label fw-semibold small mb-1">Search</label>
+          <input type="text" id="filter-search" class="form-control form-control-sm" placeholder="Equipment ID / VIN…" style="min-width:180px" />
+        </div>
+        <div class="col-12 col-md-auto mt-1">
+          <button class="btn btn-sm btn-secondary" id="btn-reset-filters"><i class="bi bi-x-circle me-1"></i>Reset</button>
+        </div>
+        <div class="col-12 col-md-auto mt-1 ms-md-auto">
+          <button class="btn btn-sm btn-success" id="btn-export-csv"><i class="bi bi-download me-1"></i>Export Filtered CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 1: Key Performance Indicators ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-speedometer2 me-2"></i>Key Performance Indicators</h5>
+    <div class="row g-3 mb-4" id="kpi-row">
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--brand-blue)">
+          <div class="kpi-value" id="kpi-total">0</div>
+          <div class="kpi-label">Total Vehicles</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
+          <div class="kpi-value" id="kpi-done">0</div>
+          <div class="kpi-label">Done</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--removed-color)">
+          <div class="kpi-value" id="kpi-removed">0</div>
+          <div class="kpi-label">Removed</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--replaced-color)">
+          <div class="kpi-value" id="kpi-replaced">0</div>
+          <div class="kpi-label">Replaced</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
+          <div class="kpi-value" id="kpi-scheduled">0</div>
+          <div class="kpi-label">Scheduled</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
+          <div class="kpi-value" id="kpi-completion">0%</div>
+          <div class="kpi-label">Completion Rate</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0d6efd">
+          <div class="kpi-value" id="kpi2-vbus">0</div>
+          <div class="kpi-label">VBUS Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6610f2">
+          <div class="kpi-value" id="kpi2-ddt">0</div>
+          <div class="kpi-label">DDT Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#198754">
+          <div class="kpi-value" id="kpi2-camera">0</div>
+          <div class="kpi-label">Camera Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#fd7e14">
+          <div class="kpi-value" id="kpi2-haptic">0</div>
+          <div class="kpi-label">Haptic Seat Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#20c997">
+          <div class="kpi-value" id="kpi2-drvbtn">0</div>
+          <div class="kpi-label">Driver Button Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
+          <div class="kpi-value" id="kpi2-display">0</div>
+          <div class="kpi-label">Display Installs</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d450-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d450">—</div>
+          <div class="kpi-label">Median D450 Install Time (hrs)</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d810-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d810">—</div>
+          <div class="kpi-label">Median D810 Install Time (hrs)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 2: Compliance & Verification Rates ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-shield-check me-2"></i>Compliance &amp; Verification Rates</h5>
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--brand-blue)">
+          <div class="kpi-value" id="kpi2-sop">0%</div>
+          <div class="kpi-label">SOP Compliance</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
+          <div class="kpi-value" id="kpi2-idms">0%</div>
+          <div class="kpi-label">IDMS Verification</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--replaced-color)">
+          <div class="kpi-value" id="kpi2-can">0%</div>
+          <div class="kpi-label">CAN Check Pass</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
+          <div class="kpi-value" id="kpi2-otr">0%</div>
+          <div class="kpi-label">OTR Test Complete</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 3: Status & Distribution ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-pie-chart me-2"></i>Status &amp; Distribution</h5>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-1"></i>Campaign Status</h6>
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installs by SCAC</h6>
+          <canvas id="chart-scac"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installs by Program</h6>
+          <canvas id="chart-program"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-bar-chart-steps me-1"></i>Installs by Body Type</h6>
+          <canvas id="chart-bodytype"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 4: Installation & Equipment Analysis ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-tools me-2"></i>Installation &amp; Equipment Analysis</h5>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installation Type Distribution</h6>
+          <canvas id="chart-install-type" style="max-height:280px"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-1"></i>Verification Status</h6>
+          <canvas id="chart-verification" style="max-height:280px"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-camera-fill me-1"></i>External Camera Installs</h6>
+          <canvas id="chart-ext-cam" style="max-height:280px"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="card chart-card shadow-sm p-3 h-100">
+          <h6 class="section-title mb-3"><i class="bi bi-check2-circle me-1"></i>Test Results Summary</h6>
+          <canvas id="chart-test-results" style="max-height:280px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 5: Installation Trends ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-graph-up me-2"></i>Installation Trends</h5>
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card chart-card shadow-sm p-3">
+          <h6 class="section-title mb-3"><i class="bi bi-graph-up me-1"></i>Daily Installation Trend (Done)</h6>
+          <canvas id="chart-trend" style="max-height:220px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Section 5: Installation Details ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-table me-2"></i>Installation Details</h5>
+    <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
+      <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 flex-wrap" style="border-radius:12px 12px 0 0">
+        <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>Installation Details</h6>
+        <span class="badge bg-secondary ms-1" id="install-table-count-badge">0</span>
+        <div class="ms-auto small text-muted">Showing up to <strong>1,000</strong> rows</div>
+        <button class="btn btn-sm btn-success ms-2" id="btn-export-install-csv"><i class="bi bi-download me-1"></i>Export Installation Details CSV</button>
+      </div>
+      <div class="d-flex gap-3 p-2 ps-3 flex-wrap align-items-center border-bottom">
+        <small class="text-muted"><span class="badge" style="background:#f8d7da;color:#842029">&nbsp;&nbsp;&nbsp;</span> Missing critical data</small>
+        <small class="text-muted"><span class="badge" style="background:#fff3cd;color:#664d03">&nbsp;&nbsp;&nbsp;</span> Missing important data</small>
+      </div>
+      <div id="install-table-wrapper" class="p-0" style="max-height:500px;overflow-y:auto;overflow-x:auto">
+        <table class="table table-sm table-hover mb-0" id="install-table">
+          <thead><tr id="install-table-head-row"></tr></thead>
+          <tbody id="install-table-body"></tbody>
+        </table>
+        <p id="install-no-data-msg" class="text-center text-muted py-4" style="display:none">No records match your filters.</p>
+      </div>
+    </div>
+
+  </div><!-- /dashboard -->
+</div><!-- /container -->
+
+<footer class="text-center py-3 mt-2">
+  DFW Pilot Installation Tracker &mdash; upload an end-of-shift Excel to begin
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ============================================================
+   FIELD NORMALIZATION – map actual Excel field names → COL names
+   where the file uses slightly different casing/wording
+   ============================================================ */
+const FIELD_NORMALIZE = {
+  'license Plate'                                      : 'License Plate',
+  'Manufacture (Green means MMY in previous VDR pilot' : 'Manufacture',
+};
+
+/* ============================================================
+   CONFIGURATION – column names as they appear in the Excel header row
+   ============================================================ */
+const COL = {
+  equipmentId   : 'Equipment ID',
+  products      : 'Products Needed',
+  program       : 'Program',
+  scac          : 'SCAC',
+  licensePlate  : 'License Plate',
+  vin           : 'VIN',
+  status        : 'Campaign Status Option (Done/Removed/Replaced)',
+  domicile      : 'Domicile',
+  latLon        : 'Location Lat/Lon (Per GRIT)',
+  manufacture   : 'Manufacture',
+  model         : 'Model',
+  modelYear     : 'Model Year',
+  bodyType      : 'Body Type',
+  fuelType      : 'Fuel Type',
+  lifecycleState: 'Lifecyle state reason',
+  assetAvail    : 'Asset Availability',
+  scheduleComm  : 'Communication of Schedule Sent',
+  scheduledDate : 'Scheduled Date',
+  availStart    : 'Availability to Start',
+  availEnd      : 'Availability End Time',
+  preInstall    : 'Pre-Installation D810 Visit',
+  firstArticle  : 'First Article Required',
+  sopNeed       : 'SOP Need',
+  cableHarness  : 'Cable - Harness Part Number',
+  canalyzer     : 'CANalyzer Needed',
+  vbusSerial    : 'VBUS Serial Number',
+  vbusInstall   : 'VBUS Install',
+  vbusPart      : 'VBUS/VDR Part Number',
+  ddtInstall    : 'DDT Install',
+  ddtSerial     : 'DDT Serial Number',
+  ddtPart       : 'DDT/DMS Part Number',
+  ddtBracket    : 'DDT/DMS New Bracket Part Number',
+  hapticSeat    : 'Haptic Seat - 15 units only',
+  hapticPart    : 'Haptic Seat Part Number',
+  cameraModel   : 'Camera Model Install',
+  newCameraSerial: 'New Camera Serial Number',
+  removedCamera : 'Removed/Returned Camera Serial Number',
+  d450Part      : 'D450 - 200 Hour Part Number',
+  dr20Part      : 'DR-20 Part Number',
+  extCameras    : 'External Cameras (D810 Only)',
+  l2CamPart     : 'L2 - External Camera Part Number',
+  l2CamSerial   : 'L2 - External Camera Serial Number',
+  r1CamPart     : 'R1  - External Camera Part Number',
+  r1CamSerial   : 'R1 - External Camera Serial Number',
+  r2CamPart     : 'R2  - External Camera Part Number',
+  r2CamSerial   : 'R2 - External Camera Serial Number',
+  boCamPart     : 'BO  - External Camera Part Number',
+  boCamSerial   : 'BO  - External Camera Serial Number',
+  extCamBracket : 'External Camera Bracket Part Number',
+  inVehicleDisp : 'In-Vehicle Display (D810 only)',
+  displayPart   : 'Internal Vehicle Display Part Number',
+  driverBtn     : 'Driver Button Install',
+  driverBtnPart : 'Driver Activation Button Part Number',
+  verifiedIDMS  : 'Verified In IDMS',
+  canCheck      : 'CAN Check Status',
+  busLoad       : 'Acceptable BUS Load Number (goguend)',
+  preBusLoad    : 'Pre VBUS Installation Bus Load',
+  tracedBus     : 'Traced BUS Load Number',
+  otrTest       : 'OTR or In-yard Test Results, if applicable',
+  idmsPortal    : 'IDMS Portal Verification',
+  netradyne     : 'Netradyne SOP Materials Collected',
+  xirgo         : 'Xirgo Test',
+  geotab        : 'Geotab',
+  truckWings    : 'Truck Wings',
+  mirrorEye     : 'MirrorEye',
+  tda           : 'Tractor DriverAssist (TDA)',
+  startTs       : 'Start Timestamp (to be entered by Vendor)',
+  endTs         : 'End Timestamp (to be entered by Vendor)',
+};
+
+/* All column labels in display order */
+const ALL_COLS = Object.values(COL);
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let rawData   = [];   // all rows parsed from Excel
+let filtered  = [];   // rows after applying filters
+let currentFilename  = '';
+let currentFileSize  = 0;
+let currentUploadTime = null;
+let activeCompletionCols = []; // subset of COMPLETION_COLS present in the loaded file
+
+let chartStatus, chartScac, chartProgram, chartTrend, chartBodyType;
+let chartInstallType, chartVerification, chartExtCam, chartTestResults;
+
+/* ============================================================
+   UPLOAD HANDLING
+   ============================================================ */
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+
+function processFile(file) {
+  const allowed = ['.xlsx', '.xls', '.csv'];
+  const ext = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')).toLowerCase() : '';
+  if (!allowed.includes(ext)) {
+    showError('Please upload an Excel (.xlsx / .xls) or CSV file.');
+    return;
+  }
+  hideError();
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      // Get raw rows as arrays for transposed detection
+      const rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (!rawRows.length) { showError('The file appears to be empty.'); return; }
+      let parsed;
+      if (isTransposedFormat(rawRows)) {
+        parsed = parseTransposedExcel(rawRows);
+        if (!parsed.length) { showError('No vehicle records found in the transposed file. Ensure vehicle data columns (B onward) are populated.'); return; }
+      } else {
+        parsed = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        if (!parsed.length) { showError('The file appears to be empty.'); return; }
+      }
+      currentFilename  = file.name;
+      currentFileSize  = file.size;
+      currentUploadTime = new Date();
+      rawData = parsed;
+      initDashboard();
+    } catch (err) {
+      showError('Could not parse file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showError(msg) {
+  const el = document.getElementById('upload-error');
+  el.textContent = msg;
+  el.classList.remove('d-none');
+}
+function hideError() {
+  document.getElementById('upload-error').classList.add('d-none');
+}
+
+/* ============================================================
+   TRANSPOSED EXCEL PARSING
+   ============================================================ */
+/**
+ * Detect transposed format: field names in column A (e.g. 'Scheduled Date')
+ * and fixed field names in another column (e.g. 'Equipment ID').
+ */
+function isTransposedFormat(rows) {
+  if (!rows || !rows.length || !rows[0]) return false;
+  const firstCell = String(rows[0][0] ?? '').trim();
+  return firstCell === 'Scheduled Date' || firstCell === 'Availability to Start';
+}
+
+/**
+ * Parse a transposed Excel layout where:
+ *   Column A (index 0)   = daily entry field names
+ *   Column H (index 7)+  = fixed field names (detected by finding 'Equipment ID')
+ *   Columns B-G          = vehicle data for daily fields
+ *   Columns I+           = vehicle data for fixed fields
+ *
+ * Returns an array of vehicle objects with normalized field names.
+ */
+function parseTransposedExcel(rows) {
+  if (!rows || !rows.length) return [];
+
+  // Locate the column containing fixed field names by finding 'Equipment ID' in row 0+
+  let fixedColIdx = -1;
+  for (let c = 1; c < (rows[0] || []).length; c++) {
+    if (String(rows[0][c] ?? '').trim() === 'Equipment ID') { fixedColIdx = c; break; }
+  }
+  // If not in row 0, scan remaining rows (in case header is offset)
+  if (fixedColIdx === -1) {
+    outer: for (let r = 1; r < rows.length; r++) {
+      const row = rows[r] || [];
+      for (let c = 1; c < row.length; c++) {
+        if (String(row[c] ?? '').trim() === 'Equipment ID') { fixedColIdx = c; break outer; }
+      }
+    }
+  }
+
+  // Extract field names from column A (daily fields)
+  const dailyFields = rows.map(r => String(r[0] ?? '').trim()).filter(Boolean);
+
+  // Extract field names from the fixed-fields separator column
+  const fixedFields = fixedColIdx >= 0
+    ? rows.map(r => String(r[fixedColIdx] ?? '').trim()).filter(Boolean)
+    : [];
+
+  // Vehicle data columns for daily fields: indices 1 … (fixedColIdx - 1)
+  // If no fixed-fields column found, use all remaining columns
+  const vehicleEndCol = fixedColIdx > 0 ? fixedColIdx - 1 : (rows[0] || []).length - 1;
+
+  const vehicles = [];
+  for (let v = 1; v <= vehicleEndCol; v++) {
+    const vehicle = {};
+
+    // Daily entry fields
+    dailyFields.forEach((fieldName, rowIdx) => {
+      const key = FIELD_NORMALIZE[fieldName] || fieldName;
+      vehicle[key] = rows[rowIdx] ? (rows[rowIdx][v] ?? '') : '';
+    });
+
+    // Fixed fields (offset by fixedColIdx relative to v)
+    if (fixedColIdx >= 0) {
+      fixedFields.forEach((fieldName, rowIdx) => {
+        const key = FIELD_NORMALIZE[fieldName] || fieldName;
+        vehicle[key] = rows[rowIdx] ? (rows[rowIdx][fixedColIdx + v] ?? '') : '';
+      });
+    }
+
+    // Only include vehicles with at least one non-empty value
+    if (Object.values(vehicle).some(val => val !== '' && val !== null && val !== undefined)) {
+      vehicles.push(vehicle);
+    }
+  }
+  return vehicles;
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024)    return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function hasValue(val) {
+  const trimmed = String(val ?? '').trim();
+  return trimmed !== '' && trimmed !== '-' && trimmed.toLowerCase() !== 'n/a';
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function initDashboard() {
+  document.getElementById('dashboard').classList.remove('d-none');
+  const ts = currentUploadTime || new Date();
+  document.getElementById('last-updated').textContent = 'Loaded: ' + ts.toLocaleString();
+
+  // Show file metadata
+  const metaEl = document.getElementById('upload-meta');
+  metaEl.classList.remove('d-none');
+  document.getElementById('meta-filename').textContent  = currentFilename;
+  document.getElementById('meta-timestamp').textContent = ts.toLocaleString();
+  document.getElementById('meta-filesize').textContent  = formatFileSize(currentFileSize);
+  document.getElementById('meta-count').textContent     = rawData.length.toLocaleString();
+
+  // Destroy existing charts to prevent accumulation
+  [chartStatus, chartScac, chartProgram, chartTrend, chartBodyType,
+   chartInstallType, chartVerification, chartExtCam, chartTestResults].forEach(chart => {
+    if (chart) chart.destroy();
+  });
+  chartStatus = chartScac = chartProgram = chartTrend = chartBodyType =
+  chartInstallType = chartVerification = chartExtCam = chartTestResults = null;
+
+  // Reset filters before populating with new data
+  resetFilters();
+
+  // Determine which completion columns are present in this file
+  activeCompletionCols = COMPLETION_COLS.filter(col =>
+    rawData.some(r => r[col] !== undefined)
+  );
+
+  populateFilters();
+  applyFilters();
+
+  // Setup KPI click handlers after dashboard is initialized
+  setupKPIClickHandlers();
+}
+
+/* ============================================================
+   FILTERS
+   ============================================================ */
+function resetFilters() {
+  ['filter-scac','filter-program','filter-status','filter-domicile'].forEach(id => {
+    document.getElementById(id).value = 'All';
+  });
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value   = '';
+  document.getElementById('filter-search').value    = '';
+}
+
+function uniqueValues(col) {
+  const set = new Set(rawData.map(r => String(r[col] ?? '').trim()).filter(Boolean));
+  return ['All', ...Array.from(set).sort()];
+}
+
+function populateFilters() {
+  fillSelect('filter-scac',     uniqueValues(COL.scac));
+  fillSelect('filter-program',  uniqueValues(COL.program));
+  fillSelect('filter-status',   uniqueValues(COL.status));
+  fillSelect('filter-domicile', uniqueValues(COL.domicile));
+}
+
+function fillSelect(id, values) {
+  const sel = document.getElementById(id);
+  const prev = sel.value;
+  sel.innerHTML = values.map(v => `<option value="${v}">${v}</option>`).join('');
+  if (values.includes(prev)) sel.value = prev;
+}
+
+['filter-scac','filter-program','filter-status','filter-domicile',
+ 'filter-date-from','filter-date-to','filter-search'].forEach(id => {
+  document.getElementById(id).addEventListener('change', applyFilters);
+  document.getElementById(id).addEventListener('input',  applyFilters);
+});
+
+document.getElementById('btn-reset-filters').addEventListener('click', () => {
+  resetFilters();
+  applyFilters();
+});
+
+function setupKPIClickHandlers() {
+  // Helper to add clickable icon
+  const addClickableIcon = (card) => {
+    if (!card.querySelector('.clickable-icon')) {
+      const icon = document.createElement('i');
+      icon.className = 'bi bi-arrow-down-circle clickable-icon';
+      card.style.position = 'relative';
+      card.appendChild(icon);
+    }
+  };
+
+  // Total Vehicles - show all
+  const totalCard = document.querySelector('#kpi-total').closest('.kpi-card');
+  totalCard.style.cursor = 'pointer';
+  addClickableIcon(totalCard);
+  totalCard.addEventListener('click', () => {
+    resetFilters();
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Done - filter by "Done" status
+  const doneCard = document.querySelector('#kpi-done').closest('.kpi-card');
+  doneCard.style.cursor = 'pointer';
+  addClickableIcon(doneCard);
+  doneCard.addEventListener('click', () => {
+    resetFilters();
+    const statusSelect = document.getElementById('filter-status');
+    const doneOption = Array.from(statusSelect.options).find(opt => /done/i.test(opt.value));
+    if (doneOption) statusSelect.value = doneOption.value;
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Removed - filter by "Removed" status
+  const removedCard = document.querySelector('#kpi-removed').closest('.kpi-card');
+  removedCard.style.cursor = 'pointer';
+  addClickableIcon(removedCard);
+  removedCard.addEventListener('click', () => {
+    resetFilters();
+    const statusSelect = document.getElementById('filter-status');
+    const removedOption = Array.from(statusSelect.options).find(opt => /removed/i.test(opt.value));
+    if (removedOption) statusSelect.value = removedOption.value;
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Replaced - filter by "Replaced" status
+  const replacedCard = document.querySelector('#kpi-replaced').closest('.kpi-card');
+  replacedCard.style.cursor = 'pointer';
+  addClickableIcon(replacedCard);
+  replacedCard.addEventListener('click', () => {
+    resetFilters();
+    const statusSelect = document.getElementById('filter-status');
+    const replacedOption = Array.from(statusSelect.options).find(opt => /replaced/i.test(opt.value));
+    if (replacedOption) statusSelect.value = replacedOption.value;
+    applyFilters();
+    scrollToVehicleRecords();
+  });
+
+  // Scheduled - show only vehicles with scheduled dates
+  const scheduledCard = document.querySelector('#kpi-scheduled').closest('.kpi-card');
+  scheduledCard.style.cursor = 'pointer';
+  addClickableIcon(scheduledCard);
+  scheduledCard.addEventListener('click', () => {
+    resetFilters();
+    applyFilters();
+    // Apply custom filter for scheduled vehicles
+    filtered = filtered.filter(r => r[COL.scheduledDate]);
+    renderInstallTable();
+    scrollToVehicleRecords();
+  });
+}
+
+function scrollToVehicleRecords() {
+  const tableSection = document.querySelector('#install-table-wrapper').closest('.card');
+  tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Add a brief highlight effect
+  tableSection.style.boxShadow = '0 0 20px rgba(0, 48, 135, 0.5)';
+  setTimeout(() => {
+    tableSection.style.boxShadow = '';
+  }, 2000);
+}
+
+function applyFilters() {
+  const scac     = document.getElementById('filter-scac').value;
+  const program  = document.getElementById('filter-program').value;
+  const status   = document.getElementById('filter-status').value;
+  const domicile = document.getElementById('filter-domicile').value;
+  const dateFrom = document.getElementById('filter-date-from').value;
+  const dateTo   = document.getElementById('filter-date-to').value;
+  const search   = document.getElementById('filter-search').value.trim().toLowerCase();
+
+  filtered = rawData.filter(row => {
+    if (scac     !== 'All' && String(row[COL.scac]     ?? '').trim() !== scac)     return false;
+    if (program  !== 'All' && String(row[COL.program]  ?? '').trim() !== program)  return false;
+    if (status   !== 'All' && String(row[COL.status]   ?? '').trim() !== status)   return false;
+    if (domicile !== 'All' && String(row[COL.domicile] ?? '').trim() !== domicile) return false;
+
+    if (dateFrom || dateTo) {
+      const d = parseDate(row[COL.scheduledDate]);
+      if (d) {
+        if (dateFrom && d < new Date(dateFrom)) return false;
+        if (dateTo   && d > new Date(dateTo + 'T23:59:59')) return false;
+      }
+    }
+
+    if (search) {
+      const haystack = [
+        row[COL.equipmentId], row[COL.vin], row[COL.licensePlate],
+        row[COL.scac], row[COL.domicile]
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+
+    return true;
+  });
+
+  renderKPIs();
+  renderCharts();
+  renderTab2KPIs();
+  renderTab2Charts();
+  renderInstallTable();
+}
+
+/* ============================================================
+   DATE HELPER
+   ============================================================ */
+function parseDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  const d = new Date(val);
+  return isNaN(d) ? null : d;
+}
+
+function toDateStr(val) {
+  const d = parseDate(val);
+  if (!d) return String(val ?? '');
+  return d.toLocaleDateString();
+}
+
+/* ============================================================
+   TIMESTAMP & DURATION HELPERS
+   ============================================================ */
+const MS_PER_HOUR = 3600000;
+const D450_THRESHOLD_HOURS = 3.0;
+const D810_THRESHOLD_HOURS = 6.0;
+
+function parseTimestamp(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+  // Handle M/D/YY or M/D/YYYY with H:MM [AM/PM]
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (m) {
+    let yr = parseInt(m[3]);
+    if (yr < 100) yr += (yr < 50 ? 2000 : 1900);
+    let hr = parseInt(m[4]);
+    const mi = parseInt(m[5]);
+    const se = parseInt(m[6] || 0);
+    const ap = m[7] ? m[7].toUpperCase() : null;
+    if (ap === 'PM' && hr < 12) hr += 12;
+    if (ap === 'AM' && hr === 12) hr = 0;
+    const d = new Date(yr, parseInt(m[1]) - 1, parseInt(m[2]), hr, mi, se);
+    return isNaN(d) ? null : d;
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+function computeInstallDuration(row) {
+  const start = parseTimestamp(row[COL.startTs]);
+  const end   = parseTimestamp(row[COL.endTs]);
+  if (!start || !end) return null;
+  const hours = (end - start) / MS_PER_HOUR;
+  return hours > 0 ? hours : null;
+}
+
+function computeMedian(arr) {
+  if (!arr.length) return null;
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/* ============================================================
+   KPI CARDS
+   ============================================================ */
+function renderKPIs() {
+  const total    = filtered.length;
+  const done     = filtered.filter(r => /done/i.test(r[COL.status] ?? '')).length;
+  const removed  = filtered.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
+  const replaced = filtered.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
+  const scheduled = filtered.filter(r => r[COL.scheduledDate]).length;
+  const rate = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('kpi-total').textContent      = total.toLocaleString();
+  document.getElementById('kpi-done').textContent       = done.toLocaleString();
+  document.getElementById('kpi-removed').textContent    = removed.toLocaleString();
+  document.getElementById('kpi-replaced').textContent   = replaced.toLocaleString();
+  document.getElementById('kpi-scheduled').textContent  = scheduled.toLocaleString();
+  document.getElementById('kpi-completion').textContent = rate + '%';
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+function countBy(col) {
+  const map = {};
+  filtered.forEach(r => {
+    const k = String(r[col] ?? '').trim() || '(blank)';
+    map[k] = (map[k] || 0) + 1;
+  });
+  return map;
+}
+
+function sortedEntries(map, limit = 20) {
+  return Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+}
+
+const PALETTE = [
+  '#003087','#f5a623','#198754','#dc3545','#0dcaf0',
+  '#6f42c1','#fd7e14','#20c997','#e83e8c','#adb5bd',
+  '#0d6efd','#ffc107','#6610f2','#d63384','#0dcaf0',
+];
+
+function getOrCreate(id, type, data, options) {
+  const canvas = document.getElementById(id);
+  const existing = Chart.getChart(canvas);
+  if (existing) { existing.data = data; existing.update(); return existing; }
+  return new Chart(canvas, { type, data, options });
+}
+
+function renderCharts() {
+  /* Status pie */
+  const statusMap = countBy(COL.status);
+  const statusColors = Object.keys(statusMap).map(k => {
+    if (/done/i.test(k))     return 'var(--done-color)';
+    if (/removed/i.test(k))  return 'var(--removed-color)';
+    if (/replaced/i.test(k)) return 'var(--replaced-color)';
+    return 'var(--other-color)';
+  });
+  chartStatus = getOrCreate('chart-status', 'doughnut',
+    { labels: Object.keys(statusMap), datasets: [{ data: Object.values(statusMap), backgroundColor: statusColors, borderWidth: 2 }] },
+    { plugins: { legend: { position: 'bottom', labels: { boxWidth: 14 } } }, maintainAspectRatio: true }
+  );
+
+  /* SCAC bar */
+  const scacEntries = sortedEntries(countBy(COL.scac));
+  chartScac = getOrCreate('chart-scac', 'bar',
+    { labels: scacEntries.map(e => e[0]), datasets: [{ label: 'Vehicles', data: scacEntries.map(e => e[1]), backgroundColor: '#003087' }] },
+    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+  );
+
+  /* Program bar */
+  const progEntries = sortedEntries(countBy(COL.program));
+  chartProgram = getOrCreate('chart-program', 'bar',
+    { labels: progEntries.map(e => e[0]), datasets: [{ label: 'Vehicles', data: progEntries.map(e => e[1]), backgroundColor: '#f5a623' }] },
+    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+  );
+
+  /* Daily trend */
+  const trendMap = {};
+  filtered.forEach(r => {
+    if (!/done/i.test(r[COL.status] ?? '')) return;
+    const d = parseDate(r[COL.scheduledDate]);
+    if (!d) return;
+    const key = d.toISOString().slice(0, 10);
+    trendMap[key] = (trendMap[key] || 0) + 1;
+  });
+  const trendKeys = Object.keys(trendMap).sort();
+  chartTrend = getOrCreate('chart-trend', 'line',
+    {
+      labels: trendKeys,
+      datasets: [{
+        label: 'Done per day',
+        data: trendKeys.map(k => trendMap[k]),
+        borderColor: '#003087', backgroundColor: 'rgba(0,48,135,.12)',
+        tension: 0.3, fill: true, pointRadius: 3,
+      }]
+    },
+    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false }
+  );
+
+  /* Body type */
+  const btEntries = sortedEntries(countBy(COL.bodyType), 10);
+  chartBodyType = getOrCreate('chart-bodytype', 'bar',
+    {
+      labels: btEntries.map(e => e[0]),
+      datasets: [{ label: 'Vehicles', data: btEntries.map(e => e[1]), backgroundColor: PALETTE }]
+    },
+    { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+  );
+}
+
+/* ============================================================
+   DATA VALIDATION – completion percentage per vehicle
+   Only the fields below are considered "fillable" for completion tracking.
+   ============================================================ */
+const COMPLETION_COLS = [
+  COL.sopNeed,
+  COL.cableHarness,
+  COL.canalyzer,
+  COL.vbusSerial,
+  COL.vbusInstall,
+  COL.vbusPart,
+  COL.ddtInstall,
+  COL.ddtSerial,
+  COL.ddtPart,
+  COL.ddtBracket,
+  COL.hapticSeat,
+  COL.hapticPart,
+  COL.cameraModel,
+  COL.newCameraSerial,
+  COL.removedCamera,
+  COL.d450Part,
+  COL.dr20Part,
+  COL.extCameras,
+  COL.l2CamPart,
+  COL.l2CamSerial,
+  COL.r1CamPart,
+  COL.r1CamSerial,
+  COL.r2CamPart,
+  COL.r2CamSerial,
+  COL.boCamPart,
+  COL.boCamSerial,
+  COL.extCamBracket,
+  COL.inVehicleDisp,
+  COL.displayPart,
+  COL.driverBtn,
+  COL.driverBtnPart,
+  COL.verifiedIDMS,
+  COL.canCheck,
+  COL.busLoad,
+  COL.preBusLoad,
+  COL.tracedBus,
+  COL.otrTest,
+  COL.idmsPortal,
+  COL.netradyne,
+  COL.xirgo,
+  COL.geotab,
+  COL.truckWings,
+  COL.mirrorEye,
+  COL.tda,
+  COL.startTs,
+  COL.endTs,
+];
+
+function computeCompletion(row) {
+  if (!activeCompletionCols.length) return 0;
+  const filled = activeCompletionCols.filter(col => hasValue(row[col])).length;
+  return Math.round(filled / activeCompletionCols.length * 100);
+}
+
+function completionBadge(pct) {
+  const cls = pct >= 80 ? 'completion-high' : pct >= 50 ? 'completion-medium' : 'completion-low';
+  return `<span class="badge ${cls}">${pct}%</span>`;
+}
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+/* Key columns shown by default (first 12 to keep table readable) */
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  if (!filtered.length) return;
+
+  /* Use all columns present in data */
+  const cols = Object.keys(filtered[0]);
+  const lines = [cols.map(csvCell).join(',')];
+  filtered.forEach(r => {
+    lines.push(cols.map(c => csvCell(String(r[c] ?? ''))).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const now  = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  a.download = `DFW_Pilot_Export_${date}_${time}_Filtered.csv`;
+  a.click();
+});
+
+function csvCell(v) {
+  const s = String(v).replace(/"/g,'""');
+  return /[",\n]/.test(s) ? `"${s}"` : s;
+}
+
+/* ============================================================
+   TAB 2 – INSTALLATION DETAILS & EQUIPMENT
+   ============================================================ */
+
+/* Installation-specific columns for Tab 2 table */
+const INSTALL_COLS = [
+  COL.equipmentId, COL.program, COL.scac, COL.scheduledDate,
+  COL.sopNeed, COL.cableHarness, COL.canalyzer,
+  COL.vbusSerial, COL.vbusInstall, COL.vbusPart,
+  COL.ddtInstall, COL.ddtSerial, COL.ddtPart, COL.ddtBracket,
+  COL.hapticSeat, COL.hapticPart,
+  COL.cameraModel, COL.newCameraSerial, COL.removedCamera,
+  COL.d450Part, COL.dr20Part,
+  COL.extCameras, COL.l2CamPart, COL.l2CamSerial,
+  COL.r1CamPart, COL.r1CamSerial, COL.r2CamPart, COL.r2CamSerial,
+  COL.boCamPart, COL.boCamSerial, COL.extCamBracket,
+  COL.inVehicleDisp, COL.displayPart,
+  COL.driverBtn, COL.driverBtnPart,
+  COL.verifiedIDMS, COL.canCheck,
+  COL.busLoad, COL.preBusLoad, COL.tracedBus,
+  COL.otrTest, COL.idmsPortal, COL.netradyne,
+  COL.xirgo, COL.geotab, COL.truckWings, COL.mirrorEye, COL.tda,
+  COL.startTs, COL.endTs,
+];
+
+/* Critical fields: empty = light red highlight */
+const CRITICAL_FIELDS = new Set([
+  COL.vbusSerial, COL.ddtSerial, COL.newCameraSerial,
+  COL.verifiedIDMS, COL.canCheck, COL.netradyne,
+]);
+
+/* Important fields: empty = light yellow highlight */
+const IMPORTANT_FIELDS = new Set([
+  COL.vbusInstall, COL.ddtInstall, COL.cameraModel,
+  COL.hapticSeat, COL.driverBtn, COL.otrTest, COL.idmsPortal,
+]);
+
+/* Part number columns for parts usage heatmap */
+const PART_COLS = [
+  COL.cableHarness, COL.vbusPart, COL.ddtPart, COL.ddtBracket,
+  COL.hapticPart, COL.d450Part, COL.dr20Part,
+  COL.l2CamPart, COL.r1CamPart, COL.r2CamPart, COL.boCamPart,
+  COL.extCamBracket, COL.displayPart, COL.driverBtnPart,
+];
+
+function renderTab2KPIs() {
+  const total = filtered.length;
+
+  /* Installation counts */
+  const vbusCount    = filtered.filter(r => hasValue(r[COL.vbusSerial])).length;
+  const ddtCount     = filtered.filter(r => hasValue(r[COL.ddtSerial])).length;
+  const cameraCount  = filtered.filter(r => hasValue(r[COL.newCameraSerial])).length;
+  const hapticCount  = filtered.filter(r => hasValue(r[COL.hapticPart])).length;
+  const btnCount     = filtered.filter(r => hasValue(r[COL.driverBtnPart])).length;
+  const displayCount = filtered.filter(r => hasValue(r[COL.displayPart])).length;
+
+  document.getElementById('kpi2-vbus').textContent    = vbusCount.toLocaleString();
+  document.getElementById('kpi2-ddt').textContent     = ddtCount.toLocaleString();
+  document.getElementById('kpi2-camera').textContent  = cameraCount.toLocaleString();
+  document.getElementById('kpi2-haptic').textContent  = hapticCount.toLocaleString();
+  document.getElementById('kpi2-drvbtn').textContent  = btnCount.toLocaleString();
+  document.getElementById('kpi2-display').textContent = displayCount.toLocaleString();
+
+  /* Compliance / verification rates */
+  const pct = v => total ? Math.round(v / total * 100) : 0;
+  const sopCollectedCount = filtered.filter(r => hasValue(r[COL.sopNeed])).length;
+  const idmsCount = filtered.filter(r => hasValue(r[COL.verifiedIDMS])).length;
+  const canCount  = filtered.filter(r => hasValue(r[COL.canCheck])).length;
+  const otrCount  = filtered.filter(r => hasValue(r[COL.otrTest])).length;
+
+  document.getElementById('kpi2-sop').textContent  = pct(sopCollectedCount)  + '%';
+  document.getElementById('kpi2-idms').textContent = pct(idmsCount) + '%';
+  document.getElementById('kpi2-can').textContent  = pct(canCount)  + '%';
+  document.getElementById('kpi2-otr').textContent  = pct(otrCount)  + '%';
+
+  /* Median install time KPIs */
+  const d450Durations = filtered
+    .filter(r => /d450/i.test(String(r[COL.products] ?? '')))
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+  const d810Durations = filtered
+    .filter(r => /d810/i.test(String(r[COL.products] ?? '')))
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+
+  const medianD450 = computeMedian(d450Durations);
+  const medianD810 = computeMedian(d810Durations);
+
+  const d450Card = document.getElementById('kpi-median-d450-card');
+  const d810Card = document.getElementById('kpi-median-d810-card');
+
+  if (medianD450 === null) {
+    document.getElementById('kpi-median-d450').textContent = '—';
+    d450Card.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d450').textContent = medianD450.toFixed(2);
+    d450Card.classList.toggle('kpi-danger', medianD450 >= D450_THRESHOLD_HOURS);
+  }
+
+  if (medianD810 === null) {
+    document.getElementById('kpi-median-d810').textContent = '—';
+    d810Card.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d810').textContent = medianD810.toFixed(2);
+    d810Card.classList.toggle('kpi-danger', medianD810 >= D810_THRESHOLD_HOURS);
+  }
+}
+
+function renderTab2Charts() {
+  /* 1. Installation Type Distribution */
+  const installCounts = {
+    'VBUS':               filtered.filter(r => String(r[COL.vbusInstall]   ?? '').trim()).length,
+    'DDT':                filtered.filter(r => String(r[COL.ddtInstall]    ?? '').trim()).length,
+    'Camera':             filtered.filter(r => String(r[COL.cameraModel]   ?? '').trim()).length,
+    'Haptic Seat':        filtered.filter(r => String(r[COL.hapticSeat]    ?? '').trim()).length,
+    'Driver Button':      filtered.filter(r => String(r[COL.driverBtn]     ?? '').trim()).length,
+    'In-Vehicle Display': filtered.filter(r => String(r[COL.inVehicleDisp] ?? '').trim()).length,
+  };
+  const installLabels = Object.keys(installCounts);
+  const installTotals = installLabels.map(() => filtered.length);
+  chartInstallType = getOrCreate('chart-install-type', 'bar',
+    { labels: installLabels, datasets: [
+        { label: 'Total Vehicles', data: installTotals, backgroundColor: 'rgba(173,181,189,0.5)', borderColor: '#adb5bd', borderWidth: 1 },
+        { label: 'Installs',       data: Object.values(installCounts), backgroundColor: PALETTE },
+    ]},
+    { indexAxis: 'y', plugins: { legend: { display: true, position: 'top' } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+  );
+
+  /* 2. Verification Status (Doughnut) */
+  const idmsVerified    = filtered.filter(r => String(r[COL.verifiedIDMS] ?? '').trim()).length;
+  const idmsNotVerified = filtered.length - idmsVerified;
+  const canComplete     = filtered.filter(r => String(r[COL.canCheck]     ?? '').trim()).length;
+  const canIncomplete   = filtered.length - canComplete;
+  chartVerification = getOrCreate('chart-verification', 'doughnut',
+    {
+      labels: ['IDMS Verified', 'IDMS Not Verified', 'CAN Complete', 'CAN Incomplete'],
+      datasets: [{ data: [idmsVerified, idmsNotVerified, canComplete, canIncomplete],
+        backgroundColor: ['#198754','#dc3545','#003087','#adb5bd'], borderWidth: 2 }]
+    },
+    { plugins: { legend: { position: 'bottom', labels: { boxWidth: 14 } } }, maintainAspectRatio: true }
+  );
+
+  /* 4. External Camera Installation Breakdown */
+  const camCounts = {
+    'L2': filtered.filter(r => String(r[COL.l2CamPart] ?? '').trim()).length,
+    'R1': filtered.filter(r => String(r[COL.r1CamPart] ?? '').trim()).length,
+    'R2': filtered.filter(r => String(r[COL.r2CamPart] ?? '').trim()).length,
+    'BO': filtered.filter(r => String(r[COL.boCamPart] ?? '').trim()).length,
+  };
+  chartExtCam = getOrCreate('chart-ext-cam', 'bar',
+    { labels: Object.keys(camCounts), datasets: [{ label: 'Installations', data: Object.values(camCounts),
+      backgroundColor: ['#003087','#f5a623','#198754','#dc3545'] }] },
+    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+  );
+
+  /* 5. Test Results Summary */
+  const testCounts = {
+    'Xirgo':       filtered.filter(r => String(r[COL.xirgo]      ?? '').trim()).length,
+    'Geotab':      filtered.filter(r => String(r[COL.geotab]     ?? '').trim()).length,
+    'Netradyne':   filtered.filter(r => String(r[COL.netradyne]  ?? '').trim()).length,
+    'MirrorEye':   filtered.filter(r => String(r[COL.mirrorEye]  ?? '').trim()).length,
+    'TDA':         filtered.filter(r => String(r[COL.tda]        ?? '').trim()).length,
+    'Truck Wings': filtered.filter(r => String(r[COL.truckWings] ?? '').trim()).length,
+  };
+  chartTestResults = getOrCreate('chart-test-results', 'bar',
+    { labels: Object.keys(testCounts), datasets: [{ label: 'Completed', data: Object.values(testCounts), backgroundColor: '#20c997' }] },
+    { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+  );
+}
+
+function renderInstallTable() {
+  const head   = document.getElementById('install-table-head-row');
+  const body   = document.getElementById('install-table-body');
+  const badge  = document.getElementById('install-table-count-badge');
+  const noData = document.getElementById('install-no-data-msg');
+
+  // Use !== undefined (not !== '') so columns present-but-blank in the CSV still appear
+  const available = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined));
+  const showDuration = available.includes(COL.startTs) && available.includes(COL.endTs);
+
+  const headCells = ['<th>Completion</th>'];
+  available.forEach(c => {
+    headCells.push(`<th>${escHtml(c)}</th>`);
+    if (showDuration && c === COL.endTs) headCells.push('<th>Install Duration (hrs)</th>');
+  });
+  head.innerHTML = headCells.join('');
+
+  const rows = filtered.slice(0, 1000);
+  badge.textContent = filtered.length.toLocaleString();
+
+  if (!rows.length) {
+    body.innerHTML = '';
+    noData.style.display = 'block';
+    return;
+  }
+  noData.style.display = 'none';
+
+  body.innerHTML = rows.map(r => {
+    const completionCell = `<td>${completionBadge(computeCompletion(r))}</td>`;
+    let cells = '';
+    available.forEach(c => {
+      const v = String(r[c] ?? '');
+      const isEmpty = !v.trim();
+      let cls = '';
+      if (isEmpty && CRITICAL_FIELDS.has(c))  cls = ' class="cell-critical"';
+      else if (isEmpty && IMPORTANT_FIELDS.has(c)) cls = ' class="cell-missing"';
+      cells += c === COL.scheduledDate ? `<td${cls}>${toDateStr(r[c])}</td>` : `<td${cls}>${escHtml(v)}</td>`;
+      if (showDuration && c === COL.endTs) {
+        const dur = computeInstallDuration(r);
+        cells += `<td>${dur !== null ? dur.toFixed(2) : ''}</td>`;
+      }
+    });
+    return `<tr>${completionCell}${cells}</tr>`;
+  }).join('');
+}
+
+/* Export Installation Details CSV */
+document.getElementById('btn-export-install-csv').addEventListener('click', () => {
+  if (!filtered.length) return;
+  // Use !== undefined (not !== '') so columns present-but-blank in the CSV still appear
+  const cols = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined));
+  const showDuration = cols.includes(COL.startTs) && cols.includes(COL.endTs);
+  const endTsIdx = cols.indexOf(COL.endTs);
+  const headerRow = ['Completion', ...cols.map(csvCell)];
+  if (showDuration && endTsIdx >= 0) headerRow.splice(endTsIdx + 2, 0, csvCell('Install Duration (hrs)'));
+  const lines = [headerRow.join(',')];
+  filtered.forEach(r => {
+    const dataRow = [csvCell(computeCompletion(r) + '%'), ...cols.map(c => csvCell(String(r[c] ?? '')))];
+    if (showDuration && endTsIdx >= 0) {
+      const dur = computeInstallDuration(r);
+      dataRow.splice(endTsIdx + 2, 0, csvCell(dur !== null ? dur.toFixed(2) : ''));
+    }
+    lines.push(dataRow.join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const now  = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  a.download = `DFW_Pilot_Install_Details_${date}_${time}.csv`;
+  a.click();
+});
+</script>
+</body>
+</html>
