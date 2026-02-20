@@ -37,7 +37,7 @@
       cursor: pointer;
     }
     #upload-zone.dragover { border-color: var(--brand-blue); background: #e8f0ff; }
-    #upload-zone .upload-icon { font-size: 3rem; color: #adb5bd; }
+    #upload-zone .upload-icon { font-size: 1.5rem; color: #adb5bd; }
     #file-input { display: none; }
 
     /* KPI cards */
@@ -120,11 +120,10 @@
 
   <!-- ══════════ UPLOAD ZONE ══════════ -->
   <div id="upload-section" class="mb-4">
-    <div id="upload-zone" class="p-5 text-center" onclick="document.getElementById('file-input').click()">
-      <div class="upload-icon mb-2"><i class="bi bi-file-earmark-spreadsheet"></i></div>
-      <h5 class="fw-semibold text-secondary">Upload End-of-Shift Excel File</h5>
-      <p class="text-muted small mb-3">Drag &amp; drop your <strong>.xlsx</strong> or <strong>.xls</strong> file here, or click to browse</p>
-      <button class="btn btn-outline-primary btn-sm px-4" onclick="event.stopPropagation();document.getElementById('file-input').click()">
+    <div id="upload-zone" class="p-2 d-flex align-items-center gap-3" role="button" tabindex="0" aria-label="Upload End-of-Shift Excel file – drag and drop or click to browse" onclick="document.getElementById('file-input').click()" onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('file-input').click()">
+      <div class="upload-icon"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+      <span class="fw-semibold text-secondary small">Upload End-of-Shift Excel File</span>
+      <button class="btn btn-outline-primary btn-sm px-3 ms-auto" onclick="event.stopPropagation();document.getElementById('file-input').click()">
         <i class="bi bi-upload me-1"></i>Choose File
       </button>
       <input type="file" id="file-input" accept=".xlsx,.xls,.csv" />
