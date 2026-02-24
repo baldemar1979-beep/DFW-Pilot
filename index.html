@@ -111,6 +111,22 @@
     #install-table tbody tr:hover { background: #eef3ff; }
     .cell-missing  { background: #fff3cd !important; }
     .cell-critical { background: #f8d7da !important; }
+
+    /* KPI column highlight */
+    #install-table thead th.col-kpi-highlight { background: rgba(245,166,35,0.35) !important; outline: 2px solid var(--brand-gold); outline-offset: -2px; }
+    #install-table tbody td.col-kpi-cell-hl { box-shadow: inset 0 0 0 2px var(--brand-gold) !important; }
+
+    /* Sortable column headers */
+    #install-table thead tr.sort-row th { cursor: pointer; user-select: none; }
+    #install-table thead tr.sort-row th:hover { background: #004aab; }
+    #install-table thead tr.sort-row th .sort-icon { font-size: .7rem; margin-left: 3px; opacity: .7; }
+    #install-table thead tr.sort-row th.active-sort .sort-icon { opacity: 1; }
+
+    /* Column filter row */
+    #install-table thead tr.filter-row th { background: #1a4a9a; padding: 3px 4px; position: sticky; top: 35px; z-index: 2; }
+    #install-table thead tr.filter-row input { font-size: .72rem; padding: 2px 4px; width: 100%; min-width: 40px; border: 1px solid rgba(255,255,255,.3); border-radius: 3px; background: rgba(255,255,255,.15); color: #fff; }
+    #install-table thead tr.filter-row input::placeholder { color: rgba(255,255,255,.7); }
+    #install-table thead tr.filter-row input:focus { background: rgba(255,255,255,.25); outline: none; }
   </style>
 </head>
 
@@ -384,6 +400,7 @@
         <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>Installation Details</h6>
         <span class="badge bg-secondary ms-1" id="install-table-count-badge">0</span>
         <div class="ms-auto small text-muted">Showing up to <strong>1,000</strong> rows</div>
+        <button class="btn btn-sm btn-outline-secondary ms-2" id="btn-clear-col-filters"><i class="bi bi-funnel me-1"></i>Clear Column Filters</button>
         <button class="btn btn-sm btn-success ms-2" id="btn-export-install-csv"><i class="bi bi-download me-1"></i>Export Installation Details CSV</button>
       </div>
       <div class="d-flex gap-3 p-2 ps-3 flex-wrap align-items-center border-bottom">
@@ -491,6 +508,7 @@ const COL = {
   tda           : 'Tractor DriverAssist (TDA)',
   startTs       : 'Start Timestamp (to be entered by Vendor)',
   endTs         : 'End Timestamp (to be entered by Vendor)',
+  afpHandoff    : 'AFP/DSP/Site Hand-off - Post Install (enter name)',
 };
 
 /* All column labels in display order */
@@ -508,6 +526,10 @@ let activeCompletionCols = []; // subset of COMPLETION_COLS present in the loade
 
 let chartStatus, chartScac, chartProgram, chartTrend, chartBodyType;
 let chartInstallType, chartVerification, chartExtCam, chartTestResults;
+
+let activeKpiHighlight = []; // column names to highlight in install table
+let sortState   = { col: null, dir: 1 };
+let colFilters  = {};
 
 /* ============================================================
    UPLOAD HANDLING
@@ -687,6 +709,11 @@ function initDashboard() {
   // Reset filters before populating with new data
   resetFilters();
 
+  // Reset sort/filter/highlight state for new data
+  activeKpiHighlight = [];
+  sortState = { col: null, dir: 1 };
+  colFilters = {};
+
   // Determine which completion columns are present in this file
   activeCompletionCols = COMPLETION_COLS.filter(col =>
     rawData.some(r => r[col] !== undefined)
@@ -752,6 +779,22 @@ function setupKPIClickHandlers() {
     }
   };
 
+  // Helper for KPIs that scroll to table and highlight columns
+  const addHighlightKPI = (elementId, cols) => {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const card = el.closest('.kpi-card');
+    if (!card) return;
+    card.style.cursor = 'pointer';
+    addClickableIcon(card);
+    card.addEventListener('click', () => {
+      const same = activeKpiHighlight.length === cols.length && cols.every(c => activeKpiHighlight.includes(c));
+      activeKpiHighlight = same ? [] : cols;
+      renderInstallTable();
+      if (!same) scrollToVehicleRecords();
+    });
+  };
+
   // Total Vehicles - show all
   const totalCard = document.querySelector('#kpi-total').closest('.kpi-card');
   totalCard.style.cursor = 'pointer';
@@ -813,6 +856,45 @@ function setupKPIClickHandlers() {
     renderInstallTable();
     scrollToVehicleRecords();
   });
+
+  // Completion Rate – highlight the computed Completion column
+  addHighlightKPI('kpi-completion', ['__completion__']);
+
+  // VBUS Installs
+  addHighlightKPI('kpi2-vbus', [COL.vbusSerial, COL.vbusInstall, COL.vbusPart]);
+
+  // DDT Installs
+  addHighlightKPI('kpi2-ddt', [COL.ddtSerial, COL.ddtInstall, COL.ddtPart, COL.ddtBracket]);
+
+  // Camera Installs
+  addHighlightKPI('kpi2-camera', [COL.cameraModel, COL.newCameraSerial, COL.removedCamera]);
+
+  // Haptic Seat Installs
+  addHighlightKPI('kpi2-haptic', [COL.hapticSeat, COL.hapticPart]);
+
+  // Driver Button Installs
+  addHighlightKPI('kpi2-drvbtn', [COL.driverBtn, COL.driverBtnPart]);
+
+  // Display Installs
+  addHighlightKPI('kpi2-display', [COL.inVehicleDisp, COL.displayPart]);
+
+  // Median D450 install time – highlight timestamps and duration column
+  addHighlightKPI('kpi-median-d450', [COL.startTs, COL.endTs, '__duration__']);
+
+  // Median D810 install time
+  addHighlightKPI('kpi-median-d810', [COL.startTs, COL.endTs, '__duration__']);
+
+  // SOP Compliance
+  addHighlightKPI('kpi2-sop', [COL.sopNeed, COL.netradyne]);
+
+  // IDMS Verification
+  addHighlightKPI('kpi2-idms', [COL.verifiedIDMS, COL.idmsPortal]);
+
+  // CAN Check Pass
+  addHighlightKPI('kpi2-can', [COL.canCheck, COL.busLoad, COL.preBusLoad, COL.tracedBus]);
+
+  // OTR Test Complete
+  addHighlightKPI('kpi2-otr', [COL.otrTest]);
 }
 
 function scrollToVehicleRecords() {
@@ -1045,6 +1127,9 @@ function renderCharts() {
    Only the fields below are considered "fillable" for completion tracking.
    ============================================================ */
 const COMPLETION_COLS = [
+  COL.preInstall,
+  COL.firstArticle,
+  COL.afpHandoff,
   COL.sopNeed,
   COL.cableHarness,
   COL.canalyzer,
@@ -1146,6 +1231,7 @@ function csvCell(v) {
 /* Installation-specific columns for Tab 2 table */
 const INSTALL_COLS = [
   COL.equipmentId, COL.program, COL.scac, COL.scheduledDate,
+  COL.preInstall, COL.firstArticle, COL.afpHandoff,
   COL.sopNeed, COL.cableHarness, COL.canalyzer,
   COL.vbusSerial, COL.vbusInstall, COL.vbusPart,
   COL.ddtInstall, COL.ddtSerial, COL.ddtPart, COL.ddtBracket,
@@ -1310,24 +1396,112 @@ function renderTab2Charts() {
 }
 
 function renderInstallTable() {
-  const head   = document.getElementById('install-table-head-row');
+  // Use !== undefined (not !== '') so columns present-but-blank in the CSV still appear
+  const available    = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined));
+  const showDuration = available.includes(COL.startTs) && available.includes(COL.endTs);
+  const badge  = document.getElementById('install-table-count-badge');
+  const thead  = document.querySelector('#install-table thead');
+
+  // --- Build sort-row header cells ---
+  const sortIcon = (col) => sortState.col === col ? (sortState.dir > 0 ? '▲' : '▼') : '⇅';
+  const isCompHl   = activeKpiHighlight.includes('__completion__');
+  const sortCells   = [`<th data-sort-col="__completion__"${isCompHl ? ' class="col-kpi-highlight"' : ''}><span>Completion</span><span class="sort-icon">${sortIcon('__completion__')}</span></th>`];
+  const filterCells = ['<th></th>'];
+
+  available.forEach(c => {
+    const isHl      = activeKpiHighlight.length > 0 && activeKpiHighlight.includes(c);
+    const isColSort = sortState.col === c;
+    const cls       = [isHl ? 'col-kpi-highlight' : '', isColSort ? 'active-sort' : ''].filter(Boolean).join(' ');
+    const clsAttr   = cls ? ` class="${cls}"` : '';
+    sortCells.push(`<th${clsAttr} data-sort-col="${escHtml(c)}"><span>${escHtml(c)}</span><span class="sort-icon">${sortIcon(c)}</span></th>`);
+    filterCells.push(`<th><input type="text" class="col-filter-input" data-col="${escHtml(c)}" value="${escHtml(colFilters[c] || '')}" placeholder="…" /></th>`);
+    if (showDuration && c === COL.endTs) {
+      const isDurHl   = activeKpiHighlight.includes('__duration__');
+      const isDurSort = sortState.col === '__duration__';
+      const durCls    = [isDurHl ? 'col-kpi-highlight' : '', isDurSort ? 'active-sort' : ''].filter(Boolean).join(' ');
+      const durClsAttr = durCls ? ` class="${durCls}"` : '';
+      sortCells.push(`<th${durClsAttr} data-sort-col="__duration__"><span>Install Duration (hrs)</span><span class="sort-icon">${sortIcon('__duration__')}</span></th>`);
+      filterCells.push(`<th><input type="text" class="col-filter-input" data-col="__duration__" value="${escHtml(colFilters['__duration__'] || '')}" placeholder="…" /></th>`);
+    }
+  });
+
+  thead.innerHTML = `<tr class="sort-row">${sortCells.join('')}</tr><tr class="filter-row">${filterCells.join('')}</tr>`;
+
+  // Attach sort click handlers
+  thead.querySelectorAll('tr.sort-row th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sortCol;
+      if (sortState.col === col) sortState.dir *= -1;
+      else { sortState.col = col; sortState.dir = 1; }
+      renderInstallTable();
+    });
+  });
+
+  // Attach filter input handlers – only re-render body to preserve focus
+  thead.querySelectorAll('.col-filter-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const col = inp.dataset.col;
+      if (inp.value) colFilters[col] = inp.value;
+      else delete colFilters[col];
+      renderInstallTableBody();
+    });
+  });
+
+  badge.textContent = filtered.length.toLocaleString();
+  renderInstallTableBody();
+}
+
+function renderInstallTableBody() {
+  const available    = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined));
+  const showDuration = available.includes(COL.startTs) && available.includes(COL.endTs);
   const body   = document.getElementById('install-table-body');
   const badge  = document.getElementById('install-table-count-badge');
   const noData = document.getElementById('install-no-data-msg');
 
-  // Use !== undefined (not !== '') so columns present-but-blank in the CSV still appear
-  const available = INSTALL_COLS.filter(c => rawData.some(r => r[c] !== undefined));
-  const showDuration = available.includes(COL.startTs) && available.includes(COL.endTs);
+  // Apply column filters on top of `filtered`
+  let rows = filtered;
+  if (Object.keys(colFilters).length) {
+    rows = rows.filter(r =>
+      Object.entries(colFilters).every(([col, val]) => {
+        if (!val) return true;
+        let cellVal;
+        if (col === '__duration__') {
+          const d = computeInstallDuration(r);
+          cellVal = d !== null ? d.toFixed(2) : '';
+        } else if (col === '__completion__') {
+          cellVal = computeCompletion(r) + '%';
+        } else {
+          cellVal = String(r[col] ?? '');
+        }
+        return cellVal.toLowerCase().includes(val.toLowerCase());
+      })
+    );
+  }
 
-  const headCells = ['<th>Completion</th>'];
-  available.forEach(c => {
-    headCells.push(`<th>${escHtml(c)}</th>`);
-    if (showDuration && c === COL.endTs) headCells.push('<th>Install Duration (hrs)</th>');
-  });
-  head.innerHTML = headCells.join('');
+  // Apply sort
+  if (sortState.col) {
+    rows = [...rows].sort((a, b) => {
+      let va, vb;
+      if (sortState.col === '__duration__') {
+        va = computeInstallDuration(a) ?? -Infinity;
+        vb = computeInstallDuration(b) ?? -Infinity;
+      } else if (sortState.col === '__completion__') {
+        va = computeCompletion(a);
+        vb = computeCompletion(b);
+      } else if (sortState.col === COL.scheduledDate) {
+        va = (parseDate(a[sortState.col]) || new Date(0)).getTime();
+        vb = (parseDate(b[sortState.col]) || new Date(0)).getTime();
+      } else {
+        va = String(a[sortState.col] ?? '').toLowerCase();
+        vb = String(b[sortState.col] ?? '').toLowerCase();
+      }
+      if (va < vb) return -sortState.dir;
+      if (va > vb) return  sortState.dir;
+      return 0;
+    });
+  }
 
-  const rows = filtered.slice(0, 1000);
-  badge.textContent = filtered.length.toLocaleString();
+  badge.textContent = rows.length.toLocaleString();
 
   if (!rows.length) {
     body.innerHTML = '';
@@ -1336,19 +1510,24 @@ function renderInstallTable() {
   }
   noData.style.display = 'none';
 
-  body.innerHTML = rows.map(r => {
-    const completionCell = `<td>${completionBadge(computeCompletion(r))}</td>`;
+  body.innerHTML = rows.slice(0, 1000).map(r => {
+    const isCompHl = activeKpiHighlight.includes('__completion__');
+    const completionCell = `<td${isCompHl ? ' class="col-kpi-cell-hl"' : ''}>${completionBadge(computeCompletion(r))}</td>`;
     let cells = '';
     available.forEach(c => {
-      const v = String(r[c] ?? '');
+      const v       = String(r[c] ?? '');
       const isEmpty = !v.trim();
-      let cls = '';
-      if (isEmpty && CRITICAL_FIELDS.has(c))  cls = ' class="cell-critical"';
-      else if (isEmpty && IMPORTANT_FIELDS.has(c)) cls = ' class="cell-missing"';
-      cells += c === COL.scheduledDate ? `<td${cls}>${toDateStr(r[c])}</td>` : `<td${cls}>${escHtml(v)}</td>`;
+      const isHl    = activeKpiHighlight.length > 0 && activeKpiHighlight.includes(c);
+      const classes = [];
+      if (isEmpty && CRITICAL_FIELDS.has(c)) classes.push('cell-critical');
+      else if (isEmpty && IMPORTANT_FIELDS.has(c)) classes.push('cell-missing');
+      if (isHl && !isEmpty) classes.push('col-kpi-cell-hl');
+      const clsAttr = classes.length ? ` class="${classes.join(' ')}"` : '';
+      cells += c === COL.scheduledDate ? `<td${clsAttr}>${toDateStr(r[c])}</td>` : `<td${clsAttr}>${escHtml(v)}</td>`;
       if (showDuration && c === COL.endTs) {
-        const dur = computeInstallDuration(r);
-        cells += `<td>${dur !== null ? dur.toFixed(2) : ''}</td>`;
+        const dur      = computeInstallDuration(r);
+        const isDurHl  = activeKpiHighlight.includes('__duration__') && dur !== null;
+        cells += `<td${isDurHl ? ' class="col-kpi-cell-hl"' : ''}>${dur !== null ? dur.toFixed(2) : ''}</td>`;
       }
     });
     return `<tr>${completionCell}${cells}</tr>`;
@@ -1381,6 +1560,13 @@ document.getElementById('btn-export-install-csv').addEventListener('click', () =
   const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
   a.download = `DFW_Pilot_Install_Details_${date}_${time}.csv`;
   a.click();
+});
+
+/* Clear Column Filters button */
+document.getElementById('btn-clear-col-filters').addEventListener('click', () => {
+  colFilters = {};
+  activeKpiHighlight = [];
+  renderInstallTable();
 });
 </script>
 </body>
