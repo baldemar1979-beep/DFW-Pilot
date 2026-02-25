@@ -216,24 +216,6 @@
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
-          <div class="kpi-value" id="kpi-done">0</div>
-          <div class="kpi-label">Done - Campaign Status</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--removed-color)">
-          <div class="kpi-value" id="kpi-removed">0</div>
-          <div class="kpi-label">Removed - Campaign Status</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--replaced-color)">
-          <div class="kpi-value" id="kpi-replaced">0</div>
-          <div class="kpi-label">Replaced - Campaign Status</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
           <div class="kpi-value" id="kpi-scheduled">0</div>
           <div class="kpi-label">Scheduled - Scheduled Date</div>
@@ -265,8 +247,14 @@
       </div>
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#fd7e14">
-          <div class="kpi-value" id="kpi2-haptic">0</div>
-          <div class="kpi-label">Haptic Installs - Products Needed</div>
+          <div class="kpi-value" id="kpi2-haptic">0 / 0</div>
+          <div class="kpi-label">Haptic Installs - Completed / Needed</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#20c997">
+          <div class="kpi-value" id="kpi2-d810">0 / 0</div>
+          <div class="kpi-label">D810 Installs - Completed / Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
@@ -798,48 +786,6 @@ function setupKPIClickHandlers() {
     scrollToVehicleRecords();
   });
 
-  // Done - filter by "Done" Campaign Status
-  const doneCard = document.querySelector('#kpi-done').closest('.kpi-card');
-  doneCard.style.cursor = 'pointer';
-  addClickableIcon(doneCard);
-  doneCard.addEventListener('click', () => {
-    tableOnlyFilter = null;
-    resetFilters();
-    const statusSelect = document.getElementById('filter-status');
-    const doneOption = Array.from(statusSelect.options).find(opt => /done/i.test(opt.value));
-    if (doneOption) statusSelect.value = doneOption.value;
-    applyFilters();
-    scrollToVehicleRecords();
-  });
-
-  // Removed - filter by "Removed" status
-  const removedCard = document.querySelector('#kpi-removed').closest('.kpi-card');
-  removedCard.style.cursor = 'pointer';
-  addClickableIcon(removedCard);
-  removedCard.addEventListener('click', () => {
-    tableOnlyFilter = null;
-    resetFilters();
-    const statusSelect = document.getElementById('filter-status');
-    const removedOption = Array.from(statusSelect.options).find(opt => /removed/i.test(opt.value));
-    if (removedOption) statusSelect.value = removedOption.value;
-    applyFilters();
-    scrollToVehicleRecords();
-  });
-
-  // Replaced - filter by "Replaced" status
-  const replacedCard = document.querySelector('#kpi-replaced').closest('.kpi-card');
-  replacedCard.style.cursor = 'pointer';
-  addClickableIcon(replacedCard);
-  replacedCard.addEventListener('click', () => {
-    tableOnlyFilter = null;
-    resetFilters();
-    const statusSelect = document.getElementById('filter-status');
-    const replacedOption = Array.from(statusSelect.options).find(opt => /replaced/i.test(opt.value));
-    if (replacedOption) statusSelect.value = replacedOption.value;
-    applyFilters();
-    scrollToVehicleRecords();
-  });
-
   // Scheduled - show only vehicles with scheduled dates (table-only, does not mutate filtered)
   const scheduledCard = document.querySelector('#kpi-scheduled').closest('.kpi-card');
   scheduledCard.style.cursor = 'pointer';
@@ -865,6 +811,9 @@ function setupKPIClickHandlers() {
 
   // Haptic Installs
   addHighlightKPI('kpi2-haptic', [COL.products, COL.hapticSeat, COL.hapticPart]);
+
+  // D810 Installs
+  addHighlightKPI('kpi2-d810', [COL.products]);
 
   // Median D450 install time – highlight timestamps and duration column
   addHighlightKPI('kpi-median-d450', [COL.startTs, COL.endTs, '__duration__']);
@@ -1004,15 +953,10 @@ function computeMedian(arr) {
 function renderKPIs() {
   const total    = filtered.length;
   const done     = filtered.filter(r => /done/i.test(r[COL.status] ?? '')).length;
-  const removed  = filtered.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
-  const replaced = filtered.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
   const scheduled = filtered.filter(r => r[COL.scheduledDate]).length;
   const rate = total ? Math.round(done / total * 100) : 0;
 
   document.getElementById('kpi-total').textContent      = total.toLocaleString();
-  document.getElementById('kpi-done').textContent       = done.toLocaleString();
-  document.getElementById('kpi-removed').textContent    = removed.toLocaleString();
-  document.getElementById('kpi-replaced').textContent   = replaced.toLocaleString();
   document.getElementById('kpi-scheduled').textContent  = scheduled.toLocaleString();
   document.getElementById('kpi-completion').textContent = rate + '%';
 }
@@ -1264,12 +1208,16 @@ function renderTab2KPIs() {
   const vbusCount    = filtered.filter(r => hasValue(r[COL.vbusSerial])).length;
   const ddtCount     = filtered.filter(r => hasValue(r[COL.ddtSerial])).length;
   const cameraCount  = filtered.filter(r => hasValue(r[COL.newCameraSerial])).length;
-  const hapticCount  = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? ''))).length;
+  const hapticNeeded = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? ''))).length;
+  const hapticDone   = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
+  const d810Needed   = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? ''))).length;
+  const d810Done     = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
 
   document.getElementById('kpi2-vbus').textContent    = vbusCount.toLocaleString();
   document.getElementById('kpi2-ddt').textContent     = ddtCount.toLocaleString();
   document.getElementById('kpi2-camera').textContent  = cameraCount.toLocaleString();
-  document.getElementById('kpi2-haptic').textContent  = hapticCount.toLocaleString();
+  document.getElementById('kpi2-haptic').textContent  = hapticDone.toLocaleString() + ' / ' + hapticNeeded.toLocaleString();
+  document.getElementById('kpi2-d810').textContent    = d810Done.toLocaleString() + ' / ' + d810Needed.toLocaleString();
 
   /* Compliance / verification rates */
   const pct = v => total ? Math.round(v / total * 100) : 0;
