@@ -218,7 +218,7 @@
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
           <div class="kpi-value" id="kpi-done">0</div>
-          <div class="kpi-label">Done - IDMS Portal Verification</div>
+          <div class="kpi-label">Done - Camera Obstruction</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
@@ -507,9 +507,10 @@ const COL = {
   truckWings    : 'Truck Wings',
   mirrorEye     : 'MirrorEye',
   tda           : 'Tractor DriverAssist (TDA)',
-  startTs       : 'Start Timestamp (to be entered by Vendor)',
-  endTs         : 'End Timestamp (to be entered by Vendor)',
-  afpHandoff    : 'AFP/DSP/Site Hand-off - Post Install (enter name)',
+  startTs            : 'Start Timestamp (to be entered by Vendor)',
+  endTs              : 'End Timestamp (to be entered by Vendor)',
+  afpHandoff         : 'AFP/DSP/Site Hand-off - Post Install (enter name)',
+  cameraObstruction  : 'Camera Obstruction',
 };
 
 /* All column labels in display order */
@@ -809,12 +810,12 @@ function setupKPIClickHandlers() {
     scrollToVehicleRecords();
   });
 
-  // Done - filter install table by IDMS Portal Verification (does not set Campaign Status filter)
+  // Done - filter install table by Camera Obstruction (does not set Campaign Status filter)
   const doneCard = document.querySelector('#kpi-done').closest('.kpi-card');
   doneCard.style.cursor = 'pointer';
   addClickableIcon(doneCard);
   doneCard.addEventListener('click', () => {
-    tableOnlyFilter = r => hasValue(r[COL.idmsPortal]);
+    tableOnlyFilter = r => hasValue(r[COL.cameraObstruction]);
     resetFilters();
     applyFilters();
     scrollToVehicleRecords();
@@ -1017,7 +1018,7 @@ function computeMedian(arr) {
    ============================================================ */
 function renderKPIs() {
   const total    = filtered.length;
-  const done     = filtered.filter(r => hasValue(r[COL.idmsPortal])).length;
+  const done     = filtered.filter(r => hasValue(r[COL.cameraObstruction])).length;
   const removed  = filtered.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
   const replaced = filtered.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
   const scheduled = filtered.filter(r => r[COL.scheduledDate]).length;
@@ -1233,7 +1234,6 @@ function csvCell(v) {
 /* Installation-specific columns for Tab 2 table */
 const INSTALL_COLS = [
   COL.equipmentId, COL.program, COL.scac, COL.scheduledDate,
-  COL.preInstall, COL.firstArticle, COL.afpHandoff,
   COL.sopNeed, COL.cableHarness, COL.canalyzer,
   COL.vbusSerial, COL.vbusInstall, COL.vbusPart,
   COL.ddtInstall, COL.ddtSerial, COL.ddtPart, COL.ddtBracket,
