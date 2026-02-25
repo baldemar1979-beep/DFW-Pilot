@@ -218,7 +218,7 @@
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
           <div class="kpi-value" id="kpi-done">0</div>
-          <div class="kpi-label">Done - Camera Obstruction</div>
+          <div class="kpi-label">Done - Campaign Status</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
@@ -810,13 +810,16 @@ function setupKPIClickHandlers() {
     scrollToVehicleRecords();
   });
 
-  // Done - filter install table by Camera Obstruction (does not set Campaign Status filter)
+  // Done - filter by "Done" Campaign Status
   const doneCard = document.querySelector('#kpi-done').closest('.kpi-card');
   doneCard.style.cursor = 'pointer';
   addClickableIcon(doneCard);
   doneCard.addEventListener('click', () => {
-    tableOnlyFilter = r => hasValue(r[COL.cameraObstruction]);
+    tableOnlyFilter = null;
     resetFilters();
+    const statusSelect = document.getElementById('filter-status');
+    const doneOption = Array.from(statusSelect.options).find(opt => /done/i.test(opt.value));
+    if (doneOption) statusSelect.value = doneOption.value;
     applyFilters();
     scrollToVehicleRecords();
   });
@@ -1018,7 +1021,7 @@ function computeMedian(arr) {
    ============================================================ */
 function renderKPIs() {
   const total    = filtered.length;
-  const done     = filtered.filter(r => hasValue(r[COL.cameraObstruction])).length;
+  const done     = filtered.filter(r => /done/i.test(r[COL.status] ?? '')).length;
   const removed  = filtered.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
   const replaced = filtered.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
   const scheduled = filtered.filter(r => r[COL.scheduledDate]).length;
