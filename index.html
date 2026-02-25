@@ -266,19 +266,7 @@
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#fd7e14">
           <div class="kpi-value" id="kpi2-haptic">0</div>
-          <div class="kpi-label">Haptic Seat Installs - Haptic Seat Part Number</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#20c997">
-          <div class="kpi-value" id="kpi2-drvbtn">0</div>
-          <div class="kpi-label">Driver Button Installs - Driver Button Part Number</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
-          <div class="kpi-value" id="kpi2-display">0</div>
-          <div class="kpi-label">Display Installs - Internal Vehicle Display Part Number</div>
+          <div class="kpi-label">Haptic Installs - Products Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
@@ -875,14 +863,8 @@ function setupKPIClickHandlers() {
   // Camera Installs
   addHighlightKPI('kpi2-camera', [COL.cameraModel, COL.newCameraSerial, COL.removedCamera]);
 
-  // Haptic Seat Installs
-  addHighlightKPI('kpi2-haptic', [COL.hapticSeat, COL.hapticPart]);
-
-  // Driver Button Installs
-  addHighlightKPI('kpi2-drvbtn', [COL.driverBtn, COL.driverBtnPart]);
-
-  // Display Installs
-  addHighlightKPI('kpi2-display', [COL.inVehicleDisp, COL.displayPart]);
+  // Haptic Installs
+  addHighlightKPI('kpi2-haptic', [COL.products, COL.hapticSeat, COL.hapticPart]);
 
   // Median D450 install time – highlight timestamps and duration column
   addHighlightKPI('kpi-median-d450', [COL.startTs, COL.endTs, '__duration__']);
@@ -1282,16 +1264,12 @@ function renderTab2KPIs() {
   const vbusCount    = filtered.filter(r => hasValue(r[COL.vbusSerial])).length;
   const ddtCount     = filtered.filter(r => hasValue(r[COL.ddtSerial])).length;
   const cameraCount  = filtered.filter(r => hasValue(r[COL.newCameraSerial])).length;
-  const hapticCount  = filtered.filter(r => hasValue(r[COL.hapticPart])).length;
-  const btnCount     = filtered.filter(r => hasValue(r[COL.driverBtnPart])).length;
-  const displayCount = filtered.filter(r => hasValue(r[COL.displayPart])).length;
+  const hapticCount  = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? ''))).length;
 
   document.getElementById('kpi2-vbus').textContent    = vbusCount.toLocaleString();
   document.getElementById('kpi2-ddt').textContent     = ddtCount.toLocaleString();
   document.getElementById('kpi2-camera').textContent  = cameraCount.toLocaleString();
   document.getElementById('kpi2-haptic').textContent  = hapticCount.toLocaleString();
-  document.getElementById('kpi2-drvbtn').textContent  = btnCount.toLocaleString();
-  document.getElementById('kpi2-display').textContent = displayCount.toLocaleString();
 
   /* Compliance / verification rates */
   const pct = v => total ? Math.round(v / total * 100) : 0;
