@@ -912,18 +912,40 @@ function getOrCreate(id, type, data, options) {
 }
 
 function renderCharts() {
-  /* SCAC bar */
+  const isDone = r => /done/i.test(String(r[COL.status] ?? ''));
+
+  /* Helper: count completed per group */
+  const doneCountByCol = (col) => {
+    const map = {};
+    filtered.filter(isDone).forEach(r => {
+      const k = String(r[col] ?? '').trim() || '(blank)';
+      map[k] = (map[k] || 0) + 1;
+    });
+    return map;
+  };
+
+  /* SCAC bar — Total + Completed */
   const scacEntries = sortedEntries(countBy(COL.scac));
+  const scacLabels  = scacEntries.map(e => e[0]);
+  const scacDoneMap = doneCountByCol(COL.scac);
   chartScac = getOrCreate('chart-scac', 'bar',
-    { labels: scacEntries.map(e => e[0]), datasets: [{ label: 'Vehicles', data: scacEntries.map(e => e[1]), backgroundColor: '#003087' }] },
-    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+    { labels: scacLabels, datasets: [
+        { label: 'Total',     data: scacEntries.map(e => e[1]),            backgroundColor: 'rgba(0,48,135,0.25)', borderColor: '#003087', borderWidth: 1 },
+        { label: 'Completed', data: scacLabels.map(l => scacDoneMap[l] || 0), backgroundColor: '#003087' },
+    ]},
+    { plugins: { legend: { display: true, position: 'top' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 
-  /* Program bar */
+  /* Program bar — Total + Completed */
   const progEntries = sortedEntries(countBy(COL.program));
+  const progLabels  = progEntries.map(e => e[0]);
+  const progDoneMap = doneCountByCol(COL.program);
   chartProgram = getOrCreate('chart-program', 'bar',
-    { labels: progEntries.map(e => e[0]), datasets: [{ label: 'Vehicles', data: progEntries.map(e => e[1]), backgroundColor: '#f5a623' }] },
-    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+    { labels: progLabels, datasets: [
+        { label: 'Total',     data: progEntries.map(e => e[1]),            backgroundColor: 'rgba(245,166,35,0.3)', borderColor: '#f5a623', borderWidth: 1 },
+        { label: 'Completed', data: progLabels.map(l => progDoneMap[l] || 0), backgroundColor: '#f5a623' },
+    ]},
+    { plugins: { legend: { display: true, position: 'top' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 
   /* Daily trend */
@@ -949,14 +971,19 @@ function renderCharts() {
     { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false }
   );
 
-  /* Body type */
+  /* Body Type bar — Total + Completed */
   const btEntries = sortedEntries(countBy(COL.bodyType), 10);
+  const btLabels   = btEntries.map(e => e[0]);
+  const btDoneMap  = doneCountByCol(COL.bodyType);
   chartBodyType = getOrCreate('chart-bodytype', 'bar',
     {
-      labels: btEntries.map(e => e[0]),
-      datasets: [{ label: 'Vehicles', data: btEntries.map(e => e[1]), backgroundColor: PALETTE }]
+      labels: btLabels,
+      datasets: [
+        { label: 'Total',     data: btEntries.map(e => e[1]),          backgroundColor: 'rgba(173,181,189,0.4)', borderColor: '#adb5bd', borderWidth: 1 },
+        { label: 'Completed', data: btLabels.map(l => btDoneMap[l] || 0), backgroundColor: '#198754' },
+      ]
     },
-    { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+    { indexAxis: 'y', plugins: { legend: { display: true, position: 'top' } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 }
 
