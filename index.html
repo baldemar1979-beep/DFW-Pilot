@@ -1144,7 +1144,7 @@ function renderTab2KPIs() {
   const hapticDone   = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
   const d810Needed   = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? ''))).length;
   const d810Done     = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
-  const idmsPortalNeeded = filtered.filter(r => hasValue(r[COL.idmsPortal])).length;
+  const idmsPortalNeeded = filtered.length;
   const idmsPortalDone   = filtered.filter(r => hasValue(r[COL.verifiedIDMS])).length;
 
   document.getElementById('kpi2-ddt').textContent     = ddtDone.toLocaleString() + ' / ' + ddtNeeded.toLocaleString();
