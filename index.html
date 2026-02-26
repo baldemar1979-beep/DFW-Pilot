@@ -212,85 +212,49 @@
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--brand-blue)">
           <div class="kpi-value" id="kpi-total">0</div>
-          <div class="kpi-label">Total Vehicles</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
-          <div class="kpi-value" id="kpi-done">0</div>
-          <div class="kpi-label">Done</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--removed-color)">
-          <div class="kpi-value" id="kpi-removed">0</div>
-          <div class="kpi-label">Removed</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--replaced-color)">
-          <div class="kpi-value" id="kpi-replaced">0</div>
-          <div class="kpi-label">Replaced</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
-          <div class="kpi-value" id="kpi-scheduled">0</div>
-          <div class="kpi-label">Scheduled</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
-          <div class="kpi-value" id="kpi-completion">0%</div>
-          <div class="kpi-label">Completion Rate</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0d6efd">
-          <div class="kpi-value" id="kpi2-vbus">0</div>
-          <div class="kpi-label">VBUS Installs</div>
+          <div class="kpi-label">Total Vehicles - All Records</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6610f2">
-          <div class="kpi-value" id="kpi2-ddt">0</div>
-          <div class="kpi-label">DDT Installs</div>
+          <div class="kpi-value" id="kpi2-ddt">0 / 0</div>
+          <div class="kpi-label">DDT Installs - Completed / Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#198754">
-          <div class="kpi-value" id="kpi2-camera">0</div>
-          <div class="kpi-label">Camera Installs</div>
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0d6efd">
+          <div class="kpi-value" id="kpi2-vbus">0 / 0</div>
+          <div class="kpi-label">VBUS Installs - Completed / Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#fd7e14">
-          <div class="kpi-value" id="kpi2-haptic">0</div>
-          <div class="kpi-label">Haptic Seat Installs</div>
+          <div class="kpi-value" id="kpi2-haptic">0 / 0</div>
+          <div class="kpi-label">Haptic Installs - Completed / Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#20c997">
-          <div class="kpi-value" id="kpi2-drvbtn">0</div>
-          <div class="kpi-label">Driver Button Installs</div>
+          <div class="kpi-value" id="kpi2-d810">0 / 0</div>
+          <div class="kpi-label">D810 Installs - Completed / Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#0dcaf0">
-          <div class="kpi-value" id="kpi2-display">0</div>
-          <div class="kpi-label">Display Installs</div>
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
+          <div class="kpi-value" id="kpi-idms-portal">0 / 0</div>
+          <div class="kpi-label">IDMS Portal Verification - Completed / Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d450-card" style="background:#17a2b8">
           <div class="kpi-value" id="kpi-median-d450">—</div>
-          <div class="kpi-label">Median D450 Install Time (hrs)</div>
+          <div class="kpi-label">Median D450 Install Time (hrs) - Start/End Timestamp</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d810-card" style="background:#17a2b8">
           <div class="kpi-value" id="kpi-median-d810">—</div>
-          <div class="kpi-label">Median D810 Install Time (hrs)</div>
+          <div class="kpi-label">Median D810 Install Time (hrs) - Start/End Timestamp</div>
         </div>
       </div>
     </div>
@@ -301,25 +265,19 @@
       <div class="col-6 col-md-3">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--brand-blue)">
           <div class="kpi-value" id="kpi2-sop">0%</div>
-          <div class="kpi-label">SOP Compliance</div>
+          <div class="kpi-label">SOP Compliance - SOP Need</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--done-color)">
           <div class="kpi-value" id="kpi2-idms">0%</div>
-          <div class="kpi-label">IDMS Verification</div>
+          <div class="kpi-label">IDMS Verification - Verified In IDMS</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:var(--replaced-color)">
           <div class="kpi-value" id="kpi2-can">0%</div>
-          <div class="kpi-label">CAN Check Pass</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
-          <div class="kpi-value" id="kpi2-otr">0%</div>
-          <div class="kpi-label">OTR Test Complete</div>
+          <div class="kpi-label">CAN Check Pass - CAN Check Status</div>
         </div>
       </div>
     </div>
@@ -327,12 +285,6 @@
     <!-- ══ Section 3: Status & Distribution ══ -->
     <h5 class="section-title mb-3 mt-4"><i class="bi bi-pie-chart me-2"></i>Status &amp; Distribution</h5>
     <div class="row g-3 mb-4">
-      <div class="col-12 col-md-6 col-xl-3">
-        <div class="card chart-card shadow-sm p-3 h-100">
-          <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-1"></i>Campaign Status</h6>
-          <canvas id="chart-status"></canvas>
-        </div>
-      </div>
       <div class="col-12 col-md-6 col-xl-3">
         <div class="card chart-card shadow-sm p-3 h-100">
           <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installs by SCAC</h6>
@@ -349,35 +301,6 @@
         <div class="card chart-card shadow-sm p-3 h-100">
           <h6 class="section-title mb-3"><i class="bi bi-bar-chart-steps me-1"></i>Installs by Body Type</h6>
           <canvas id="chart-bodytype"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ Section 4: Installation & Equipment Analysis ══ -->
-    <h5 class="section-title mb-3 mt-4"><i class="bi bi-tools me-2"></i>Installation &amp; Equipment Analysis</h5>
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-md-6">
-        <div class="card chart-card shadow-sm p-3 h-100">
-          <h6 class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Installation Type Distribution</h6>
-          <canvas id="chart-install-type" style="max-height:280px"></canvas>
-        </div>
-      </div>
-      <div class="col-12 col-md-6">
-        <div class="card chart-card shadow-sm p-3 h-100">
-          <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-1"></i>Verification Status</h6>
-          <canvas id="chart-verification" style="max-height:280px"></canvas>
-        </div>
-      </div>
-      <div class="col-12 col-md-6">
-        <div class="card chart-card shadow-sm p-3 h-100">
-          <h6 class="section-title mb-3"><i class="bi bi-camera-fill me-1"></i>External Camera Installs</h6>
-          <canvas id="chart-ext-cam" style="max-height:280px"></canvas>
-        </div>
-      </div>
-      <div class="col-12 col-md-6">
-        <div class="card chart-card shadow-sm p-3 h-100">
-          <h6 class="section-title mb-3"><i class="bi bi-check2-circle me-1"></i>Test Results Summary</h6>
-          <canvas id="chart-test-results" style="max-height:280px"></canvas>
         </div>
       </div>
     </div>
@@ -401,6 +324,7 @@
         <span class="badge bg-secondary ms-1" id="install-table-count-badge">0</span>
         <div class="ms-auto small text-muted">Showing up to <strong>1,000</strong> rows</div>
         <button class="btn btn-sm btn-outline-secondary ms-2" id="btn-clear-col-filters"><i class="bi bi-funnel me-1"></i>Clear Column Filters</button>
+        <button class="btn btn-sm btn-outline-warning ms-2" id="btn-reset-install-details"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset Installation Details</button>
         <button class="btn btn-sm btn-success ms-2" id="btn-export-install-csv"><i class="bi bi-download me-1"></i>Export Installation Details CSV</button>
       </div>
       <div class="d-flex gap-3 p-2 ps-3 flex-wrap align-items-center border-bottom">
@@ -506,9 +430,10 @@ const COL = {
   truckWings    : 'Truck Wings',
   mirrorEye     : 'MirrorEye',
   tda           : 'Tractor DriverAssist (TDA)',
-  startTs       : 'Start Timestamp (to be entered by Vendor)',
-  endTs         : 'End Timestamp (to be entered by Vendor)',
-  afpHandoff    : 'AFP/DSP/Site Hand-off - Post Install (enter name)',
+  startTs            : 'Start Timestamp (to be entered by Vendor)',
+  endTs              : 'End Timestamp (to be entered by Vendor)',
+  afpHandoff         : 'AFP/DSP/Site Hand-off - Post Install (enter name)',
+  cameraObstruction  : 'Camera Obstruction',
 };
 
 /* All column labels in display order */
@@ -524,12 +449,12 @@ let currentFileSize  = 0;
 let currentUploadTime = null;
 let activeCompletionCols = []; // subset of COMPLETION_COLS present in the loaded file
 
-let chartStatus, chartScac, chartProgram, chartTrend, chartBodyType;
-let chartInstallType, chartVerification, chartExtCam, chartTestResults;
+let chartScac, chartProgram, chartTrend, chartBodyType;
 
 let activeKpiHighlight = []; // column names to highlight in install table
 let sortState   = { col: null, dir: 1 };
 let colFilters  = {};
+let tableOnlyFilter = null; // table-only predicate; does not mutate global filtered
 
 /* ============================================================
    UPLOAD HANDLING
@@ -699,12 +624,10 @@ function initDashboard() {
   document.getElementById('meta-count').textContent     = rawData.length.toLocaleString();
 
   // Destroy existing charts to prevent accumulation
-  [chartStatus, chartScac, chartProgram, chartTrend, chartBodyType,
-   chartInstallType, chartVerification, chartExtCam, chartTestResults].forEach(chart => {
+  [chartScac, chartProgram, chartTrend, chartBodyType].forEach(chart => {
     if (chart) chart.destroy();
   });
-  chartStatus = chartScac = chartProgram = chartTrend = chartBodyType =
-  chartInstallType = chartVerification = chartExtCam = chartTestResults = null;
+  chartScac = chartProgram = chartTrend = chartBodyType = null;
 
   // Reset filters before populating with new data
   resetFilters();
@@ -713,6 +636,7 @@ function initDashboard() {
   activeKpiHighlight = [];
   sortState = { col: null, dir: 1 };
   colFilters = {};
+  tableOnlyFilter = null;
 
   // Determine which completion columns are present in this file
   activeCompletionCols = COMPLETION_COLS.filter(col =>
@@ -800,83 +724,26 @@ function setupKPIClickHandlers() {
   totalCard.style.cursor = 'pointer';
   addClickableIcon(totalCard);
   totalCard.addEventListener('click', () => {
+    tableOnlyFilter = null;
     resetFilters();
     applyFilters();
     scrollToVehicleRecords();
   });
-
-  // Done - filter by "Done" status
-  const doneCard = document.querySelector('#kpi-done').closest('.kpi-card');
-  doneCard.style.cursor = 'pointer';
-  addClickableIcon(doneCard);
-  doneCard.addEventListener('click', () => {
-    resetFilters();
-    const statusSelect = document.getElementById('filter-status');
-    const doneOption = Array.from(statusSelect.options).find(opt => /done/i.test(opt.value));
-    if (doneOption) statusSelect.value = doneOption.value;
-    applyFilters();
-    scrollToVehicleRecords();
-  });
-
-  // Removed - filter by "Removed" status
-  const removedCard = document.querySelector('#kpi-removed').closest('.kpi-card');
-  removedCard.style.cursor = 'pointer';
-  addClickableIcon(removedCard);
-  removedCard.addEventListener('click', () => {
-    resetFilters();
-    const statusSelect = document.getElementById('filter-status');
-    const removedOption = Array.from(statusSelect.options).find(opt => /removed/i.test(opt.value));
-    if (removedOption) statusSelect.value = removedOption.value;
-    applyFilters();
-    scrollToVehicleRecords();
-  });
-
-  // Replaced - filter by "Replaced" status
-  const replacedCard = document.querySelector('#kpi-replaced').closest('.kpi-card');
-  replacedCard.style.cursor = 'pointer';
-  addClickableIcon(replacedCard);
-  replacedCard.addEventListener('click', () => {
-    resetFilters();
-    const statusSelect = document.getElementById('filter-status');
-    const replacedOption = Array.from(statusSelect.options).find(opt => /replaced/i.test(opt.value));
-    if (replacedOption) statusSelect.value = replacedOption.value;
-    applyFilters();
-    scrollToVehicleRecords();
-  });
-
-  // Scheduled - show only vehicles with scheduled dates
-  const scheduledCard = document.querySelector('#kpi-scheduled').closest('.kpi-card');
-  scheduledCard.style.cursor = 'pointer';
-  addClickableIcon(scheduledCard);
-  scheduledCard.addEventListener('click', () => {
-    resetFilters();
-    applyFilters();
-    // Apply custom filter for scheduled vehicles
-    filtered = filtered.filter(r => r[COL.scheduledDate]);
-    renderInstallTable();
-    scrollToVehicleRecords();
-  });
-
-  // Completion Rate – highlight the computed Completion column
-  addHighlightKPI('kpi-completion', ['__completion__']);
-
-  // VBUS Installs
-  addHighlightKPI('kpi2-vbus', [COL.vbusSerial, COL.vbusInstall, COL.vbusPart]);
 
   // DDT Installs
-  addHighlightKPI('kpi2-ddt', [COL.ddtSerial, COL.ddtInstall, COL.ddtPart, COL.ddtBracket]);
+  addHighlightKPI('kpi2-ddt', [COL.products, COL.ddtSerial, COL.ddtInstall, COL.ddtPart, COL.ddtBracket]);
 
-  // Camera Installs
-  addHighlightKPI('kpi2-camera', [COL.cameraModel, COL.newCameraSerial, COL.removedCamera]);
+  // VBUS Installs
+  addHighlightKPI('kpi2-vbus', [COL.products, COL.vbusSerial, COL.vbusInstall, COL.vbusPart]);
 
-  // Haptic Seat Installs
-  addHighlightKPI('kpi2-haptic', [COL.hapticSeat, COL.hapticPart]);
+  // Haptic Installs
+  addHighlightKPI('kpi2-haptic', [COL.products, COL.hapticSeat, COL.hapticPart]);
 
-  // Driver Button Installs
-  addHighlightKPI('kpi2-drvbtn', [COL.driverBtn, COL.driverBtnPart]);
+  // D810 Installs
+  addHighlightKPI('kpi2-d810', [COL.products]);
 
-  // Display Installs
-  addHighlightKPI('kpi2-display', [COL.inVehicleDisp, COL.displayPart]);
+  // IDMS Portal Verification Completed
+  addHighlightKPI('kpi-idms-portal', [COL.idmsPortal]);
 
   // Median D450 install time – highlight timestamps and duration column
   addHighlightKPI('kpi-median-d450', [COL.startTs, COL.endTs, '__duration__']);
@@ -892,9 +759,6 @@ function setupKPIClickHandlers() {
 
   // CAN Check Pass
   addHighlightKPI('kpi2-can', [COL.canCheck, COL.busLoad, COL.preBusLoad, COL.tracedBus]);
-
-  // OTR Test Complete
-  addHighlightKPI('kpi2-otr', [COL.otrTest]);
 }
 
 function scrollToVehicleRecords() {
@@ -945,7 +809,6 @@ function applyFilters() {
   renderKPIs();
   renderCharts();
   renderTab2KPIs();
-  renderTab2Charts();
   renderInstallTable();
 }
 
@@ -972,11 +835,25 @@ const MS_PER_HOUR = 3600000;
 const D450_THRESHOLD_HOURS = 3.0;
 const D810_THRESHOLD_HOURS = 6.0;
 
-function parseTimestamp(val) {
+// parseTimestamp: parses a full datetime or time-only string.
+// If val is time-only (HH:MM or HH:MM:SS), scheduledDate is used as the date portion.
+// Returns null if unparseable or if time-only but no valid scheduledDate is provided.
+function parseTimestamp(val, scheduledDate) {
   if (!val) return null;
   if (val instanceof Date) return isNaN(val) ? null : val;
   const s = String(val).trim();
   if (!s) return null;
+  // Handle time-only: HH:MM or HH:MM:SS (24-hour)
+  const timeOnly = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (timeOnly) {
+    const base = parseDate(scheduledDate);
+    if (!base) return null;
+    const hr = parseInt(timeOnly[1]);
+    const mi = parseInt(timeOnly[2]);
+    const se = parseInt(timeOnly[3] || 0);
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hr, mi, se);
+    return isNaN(d) ? null : d;
+  }
   // Handle M/D/YY or M/D/YYYY with H:MM [AM/PM]
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
   if (m) {
@@ -996,8 +873,9 @@ function parseTimestamp(val) {
 }
 
 function computeInstallDuration(row) {
-  const start = parseTimestamp(row[COL.startTs]);
-  const end   = parseTimestamp(row[COL.endTs]);
+  const scheduledDate = row[COL.scheduledDate];
+  const start = parseTimestamp(row[COL.startTs], scheduledDate);
+  const end   = parseTimestamp(row[COL.endTs],   scheduledDate);
   if (!start || !end) return null;
   const hours = (end - start) / MS_PER_HOUR;
   return hours > 0 ? hours : null;
@@ -1014,19 +892,7 @@ function computeMedian(arr) {
    KPI CARDS
    ============================================================ */
 function renderKPIs() {
-  const total    = filtered.length;
-  const done     = filtered.filter(r => /done/i.test(r[COL.status] ?? '')).length;
-  const removed  = filtered.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
-  const replaced = filtered.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
-  const scheduled = filtered.filter(r => r[COL.scheduledDate]).length;
-  const rate = total ? Math.round(done / total * 100) : 0;
-
-  document.getElementById('kpi-total').textContent      = total.toLocaleString();
-  document.getElementById('kpi-done').textContent       = done.toLocaleString();
-  document.getElementById('kpi-removed').textContent    = removed.toLocaleString();
-  document.getElementById('kpi-replaced').textContent   = replaced.toLocaleString();
-  document.getElementById('kpi-scheduled').textContent  = scheduled.toLocaleString();
-  document.getElementById('kpi-completion').textContent = rate + '%';
+  document.getElementById('kpi-total').textContent = filtered.length.toLocaleString();
 }
 
 /* ============================================================
@@ -1061,31 +927,40 @@ function getOrCreate(id, type, data, options) {
 }
 
 function renderCharts() {
-  /* Status pie */
-  const statusMap = countBy(COL.status);
-  const statusColors = Object.keys(statusMap).map(k => {
-    if (/done/i.test(k))     return 'var(--done-color)';
-    if (/removed/i.test(k))  return 'var(--removed-color)';
-    if (/replaced/i.test(k)) return 'var(--replaced-color)';
-    return 'var(--other-color)';
-  });
-  chartStatus = getOrCreate('chart-status', 'doughnut',
-    { labels: Object.keys(statusMap), datasets: [{ data: Object.values(statusMap), backgroundColor: statusColors, borderWidth: 2 }] },
-    { plugins: { legend: { position: 'bottom', labels: { boxWidth: 14 } } }, maintainAspectRatio: true }
-  );
+  const isDone = r => /done/i.test(String(r[COL.status] ?? ''));
 
-  /* SCAC bar */
+  /* Helper: count completed per group */
+  const doneCountByCol = (col) => {
+    const map = {};
+    filtered.filter(isDone).forEach(r => {
+      const k = String(r[col] ?? '').trim() || '(blank)';
+      map[k] = (map[k] || 0) + 1;
+    });
+    return map;
+  };
+
+  /* SCAC bar — Total + Completed */
   const scacEntries = sortedEntries(countBy(COL.scac));
+  const scacLabels  = scacEntries.map(e => e[0]);
+  const scacDoneMap = doneCountByCol(COL.scac);
   chartScac = getOrCreate('chart-scac', 'bar',
-    { labels: scacEntries.map(e => e[0]), datasets: [{ label: 'Vehicles', data: scacEntries.map(e => e[1]), backgroundColor: '#003087' }] },
-    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+    { labels: scacLabels, datasets: [
+        { label: 'Total',     data: scacEntries.map(e => e[1]),            backgroundColor: 'rgba(0,48,135,0.25)', borderColor: '#003087', borderWidth: 1 },
+        { label: 'Completed', data: scacLabels.map(l => scacDoneMap[l] || 0), backgroundColor: '#003087' },
+    ]},
+    { plugins: { legend: { display: true, position: 'top' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 
-  /* Program bar */
+  /* Program bar — Total + Completed */
   const progEntries = sortedEntries(countBy(COL.program));
+  const progLabels  = progEntries.map(e => e[0]);
+  const progDoneMap = doneCountByCol(COL.program);
   chartProgram = getOrCreate('chart-program', 'bar',
-    { labels: progEntries.map(e => e[0]), datasets: [{ label: 'Vehicles', data: progEntries.map(e => e[1]), backgroundColor: '#f5a623' }] },
-    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+    { labels: progLabels, datasets: [
+        { label: 'Total',     data: progEntries.map(e => e[1]),            backgroundColor: 'rgba(245,166,35,0.3)', borderColor: '#f5a623', borderWidth: 1 },
+        { label: 'Completed', data: progLabels.map(l => progDoneMap[l] || 0), backgroundColor: '#f5a623' },
+    ]},
+    { plugins: { legend: { display: true, position: 'top' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 
   /* Daily trend */
@@ -1111,14 +986,19 @@ function renderCharts() {
     { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false }
   );
 
-  /* Body type */
+  /* Body Type bar — Total + Completed */
   const btEntries = sortedEntries(countBy(COL.bodyType), 10);
+  const btLabels   = btEntries.map(e => e[0]);
+  const btDoneMap  = doneCountByCol(COL.bodyType);
   chartBodyType = getOrCreate('chart-bodytype', 'bar',
     {
-      labels: btEntries.map(e => e[0]),
-      datasets: [{ label: 'Vehicles', data: btEntries.map(e => e[1]), backgroundColor: PALETTE }]
+      labels: btLabels,
+      datasets: [
+        { label: 'Total',     data: btEntries.map(e => e[1]),          backgroundColor: 'rgba(173,181,189,0.4)', borderColor: '#adb5bd', borderWidth: 1 },
+        { label: 'Completed', data: btLabels.map(l => btDoneMap[l] || 0), backgroundColor: '#198754' },
+      ]
     },
-    { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+    { indexAxis: 'y', plugins: { legend: { display: true, position: 'top' } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
   );
 }
 
@@ -1231,7 +1111,6 @@ function csvCell(v) {
 /* Installation-specific columns for Tab 2 table */
 const INSTALL_COLS = [
   COL.equipmentId, COL.program, COL.scac, COL.scheduledDate,
-  COL.preInstall, COL.firstArticle, COL.afpHandoff,
   COL.sopNeed, COL.cableHarness, COL.canalyzer,
   COL.vbusSerial, COL.vbusInstall, COL.vbusPart,
   COL.ddtInstall, COL.ddtSerial, COL.ddtPart, COL.ddtBracket,
@@ -1271,42 +1150,42 @@ const PART_COLS = [
 ];
 
 function renderTab2KPIs() {
-  const total = filtered.length;
+  /* Installation counts — completed / needed from Products Needed + Campaign Status */
+  const ddtNeeded  = filtered.filter(r => /ddt/i.test(String(r[COL.products] ?? ''))).length;
+  const ddtDone    = filtered.filter(r => hasValue(r[COL.ddtSerial])).length;
+  const vbusNeeded = filtered.filter(r => /vdr|vbus/i.test(String(r[COL.products] ?? ''))).length;
+  const vbusDone   = filtered.filter(r => hasValue(r[COL.vbusSerial])).length;
+  const hapticNeeded = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? ''))).length;
+  const hapticDone   = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
+  const d810Needed   = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? ''))).length;
+  const d810Done     = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
+  const idmsPortalNeeded = filtered.length;
+  const idmsPortalDone   = filtered.filter(r => hasValue(r[COL.verifiedIDMS])).length;
 
-  /* Installation counts */
-  const vbusCount    = filtered.filter(r => hasValue(r[COL.vbusSerial])).length;
-  const ddtCount     = filtered.filter(r => hasValue(r[COL.ddtSerial])).length;
-  const cameraCount  = filtered.filter(r => hasValue(r[COL.newCameraSerial])).length;
-  const hapticCount  = filtered.filter(r => hasValue(r[COL.hapticPart])).length;
-  const btnCount     = filtered.filter(r => hasValue(r[COL.driverBtnPart])).length;
-  const displayCount = filtered.filter(r => hasValue(r[COL.displayPart])).length;
-
-  document.getElementById('kpi2-vbus').textContent    = vbusCount.toLocaleString();
-  document.getElementById('kpi2-ddt').textContent     = ddtCount.toLocaleString();
-  document.getElementById('kpi2-camera').textContent  = cameraCount.toLocaleString();
-  document.getElementById('kpi2-haptic').textContent  = hapticCount.toLocaleString();
-  document.getElementById('kpi2-drvbtn').textContent  = btnCount.toLocaleString();
-  document.getElementById('kpi2-display').textContent = displayCount.toLocaleString();
+  document.getElementById('kpi2-ddt').textContent     = ddtDone.toLocaleString() + ' / ' + ddtNeeded.toLocaleString();
+  document.getElementById('kpi2-vbus').textContent    = vbusDone.toLocaleString() + ' / ' + vbusNeeded.toLocaleString();
+  document.getElementById('kpi2-haptic').textContent  = hapticDone.toLocaleString() + ' / ' + hapticNeeded.toLocaleString();
+  document.getElementById('kpi2-d810').textContent    = d810Done.toLocaleString() + ' / ' + d810Needed.toLocaleString();
+  document.getElementById('kpi-idms-portal').textContent = idmsPortalDone.toLocaleString() + ' / ' + idmsPortalNeeded.toLocaleString();
 
   /* Compliance / verification rates */
+  const total = filtered.length;
   const pct = v => total ? Math.round(v / total * 100) : 0;
   const sopCollectedCount = filtered.filter(r => hasValue(r[COL.sopNeed])).length;
   const idmsCount = filtered.filter(r => hasValue(r[COL.verifiedIDMS])).length;
   const canCount  = filtered.filter(r => hasValue(r[COL.canCheck])).length;
-  const otrCount  = filtered.filter(r => hasValue(r[COL.otrTest])).length;
 
   document.getElementById('kpi2-sop').textContent  = pct(sopCollectedCount)  + '%';
   document.getElementById('kpi2-idms').textContent = pct(idmsCount) + '%';
   document.getElementById('kpi2-can').textContent  = pct(canCount)  + '%';
-  document.getElementById('kpi2-otr').textContent  = pct(otrCount)  + '%';
 
-  /* Median install time KPIs */
+  /* Median install time KPIs — grouped by Camera Model Install (D450 / D810) */
   const d450Durations = filtered
-    .filter(r => /d450/i.test(String(r[COL.products] ?? '')))
+    .filter(r => String(r[COL.cameraModel] ?? '').trim() === 'D450')
     .map(r => computeInstallDuration(r))
     .filter(d => d !== null);
   const d810Durations = filtered
-    .filter(r => /d810/i.test(String(r[COL.products] ?? '')))
+    .filter(r => String(r[COL.cameraModel] ?? '').trim() === 'D810')
     .map(r => computeInstallDuration(r))
     .filter(d => d !== null);
 
@@ -1334,65 +1213,7 @@ function renderTab2KPIs() {
 }
 
 function renderTab2Charts() {
-  /* 1. Installation Type Distribution */
-  const installCounts = {
-    'VBUS':               filtered.filter(r => String(r[COL.vbusInstall]   ?? '').trim()).length,
-    'DDT':                filtered.filter(r => String(r[COL.ddtInstall]    ?? '').trim()).length,
-    'Camera':             filtered.filter(r => String(r[COL.cameraModel]   ?? '').trim()).length,
-    'Haptic Seat':        filtered.filter(r => String(r[COL.hapticSeat]    ?? '').trim()).length,
-    'Driver Button':      filtered.filter(r => String(r[COL.driverBtn]     ?? '').trim()).length,
-    'In-Vehicle Display': filtered.filter(r => String(r[COL.inVehicleDisp] ?? '').trim()).length,
-  };
-  const installLabels = Object.keys(installCounts);
-  const installTotals = installLabels.map(() => filtered.length);
-  chartInstallType = getOrCreate('chart-install-type', 'bar',
-    { labels: installLabels, datasets: [
-        { label: 'Total Vehicles', data: installTotals, backgroundColor: 'rgba(173,181,189,0.5)', borderColor: '#adb5bd', borderWidth: 1 },
-        { label: 'Installs',       data: Object.values(installCounts), backgroundColor: PALETTE },
-    ]},
-    { indexAxis: 'y', plugins: { legend: { display: true, position: 'top' } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
-  );
-
-  /* 2. Verification Status (Doughnut) */
-  const idmsVerified    = filtered.filter(r => String(r[COL.verifiedIDMS] ?? '').trim()).length;
-  const idmsNotVerified = filtered.length - idmsVerified;
-  const canComplete     = filtered.filter(r => String(r[COL.canCheck]     ?? '').trim()).length;
-  const canIncomplete   = filtered.length - canComplete;
-  chartVerification = getOrCreate('chart-verification', 'doughnut',
-    {
-      labels: ['IDMS Verified', 'IDMS Not Verified', 'CAN Complete', 'CAN Incomplete'],
-      datasets: [{ data: [idmsVerified, idmsNotVerified, canComplete, canIncomplete],
-        backgroundColor: ['#198754','#dc3545','#003087','#adb5bd'], borderWidth: 2 }]
-    },
-    { plugins: { legend: { position: 'bottom', labels: { boxWidth: 14 } } }, maintainAspectRatio: true }
-  );
-
-  /* 4. External Camera Installation Breakdown */
-  const camCounts = {
-    'L2': filtered.filter(r => String(r[COL.l2CamPart] ?? '').trim()).length,
-    'R1': filtered.filter(r => String(r[COL.r1CamPart] ?? '').trim()).length,
-    'R2': filtered.filter(r => String(r[COL.r2CamPart] ?? '').trim()).length,
-    'BO': filtered.filter(r => String(r[COL.boCamPart] ?? '').trim()).length,
-  };
-  chartExtCam = getOrCreate('chart-ext-cam', 'bar',
-    { labels: Object.keys(camCounts), datasets: [{ label: 'Installations', data: Object.values(camCounts),
-      backgroundColor: ['#003087','#f5a623','#198754','#dc3545'] }] },
-    { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
-  );
-
-  /* 5. Test Results Summary */
-  const testCounts = {
-    'Xirgo':       filtered.filter(r => String(r[COL.xirgo]      ?? '').trim()).length,
-    'Geotab':      filtered.filter(r => String(r[COL.geotab]     ?? '').trim()).length,
-    'Netradyne':   filtered.filter(r => String(r[COL.netradyne]  ?? '').trim()).length,
-    'MirrorEye':   filtered.filter(r => String(r[COL.mirrorEye]  ?? '').trim()).length,
-    'TDA':         filtered.filter(r => String(r[COL.tda]        ?? '').trim()).length,
-    'Truck Wings': filtered.filter(r => String(r[COL.truckWings] ?? '').trim()).length,
-  };
-  chartTestResults = getOrCreate('chart-test-results', 'bar',
-    { labels: Object.keys(testCounts), datasets: [{ label: 'Completed', data: Object.values(testCounts), backgroundColor: '#20c997' }] },
-    { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
-  );
+  // Section 4 (Installation & Equipment Analysis) removed; no charts to render.
 }
 
 function renderInstallTable() {
@@ -1458,8 +1279,8 @@ function renderInstallTableBody() {
   const badge  = document.getElementById('install-table-count-badge');
   const noData = document.getElementById('install-no-data-msg');
 
-  // Apply column filters on top of `filtered`
-  let rows = filtered;
+  // Apply table-only filter and column filters on top of `filtered`
+  let rows = tableOnlyFilter ? filtered.filter(tableOnlyFilter) : filtered;
   if (Object.keys(colFilters).length) {
     rows = rows.filter(r =>
       Object.entries(colFilters).every(([col, val]) => {
@@ -1566,6 +1387,17 @@ document.getElementById('btn-export-install-csv').addEventListener('click', () =
 document.getElementById('btn-clear-col-filters').addEventListener('click', () => {
   colFilters = {};
   activeKpiHighlight = [];
+  renderInstallTable();
+});
+
+/* Reset Installation Details button */
+document.getElementById('btn-reset-install-details').addEventListener('click', () => {
+  colFilters = {};
+  sortState = { col: null, dir: 1 };
+  activeKpiHighlight = [];
+  tableOnlyFilter = null;
+  // Clear any filter-row input values
+  document.querySelectorAll('.col-filter-input').forEach(inp => { inp.value = ''; });
   renderInstallTable();
 });
 </script>
