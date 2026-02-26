@@ -835,11 +835,25 @@ const MS_PER_HOUR = 3600000;
 const D450_THRESHOLD_HOURS = 3.0;
 const D810_THRESHOLD_HOURS = 6.0;
 
-function parseTimestamp(val) {
+// parseTimestamp: parses a full datetime or time-only string.
+// If val is time-only (HH:MM or HH:MM:SS), scheduledDate is used as the date portion.
+// Returns null if unparseable or if time-only but no valid scheduledDate is provided.
+function parseTimestamp(val, scheduledDate) {
   if (!val) return null;
   if (val instanceof Date) return isNaN(val) ? null : val;
   const s = String(val).trim();
   if (!s) return null;
+  // Handle time-only: HH:MM or HH:MM:SS (24-hour)
+  const timeOnly = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (timeOnly) {
+    const base = parseDate(scheduledDate);
+    if (!base) return null;
+    const hr = parseInt(timeOnly[1]);
+    const mi = parseInt(timeOnly[2]);
+    const se = parseInt(timeOnly[3] || 0);
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hr, mi, se);
+    return isNaN(d) ? null : d;
+  }
   // Handle M/D/YY or M/D/YYYY with H:MM [AM/PM]
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
   if (m) {
@@ -859,8 +873,9 @@ function parseTimestamp(val) {
 }
 
 function computeInstallDuration(row) {
-  const start = parseTimestamp(row[COL.startTs]);
-  const end   = parseTimestamp(row[COL.endTs]);
+  const scheduledDate = row[COL.scheduledDate];
+  const start = parseTimestamp(row[COL.startTs], scheduledDate);
+  const end   = parseTimestamp(row[COL.endTs],   scheduledDate);
   if (!start || !end) return null;
   const hours = (end - start) / MS_PER_HOUR;
   return hours > 0 ? hours : null;
@@ -1164,13 +1179,13 @@ function renderTab2KPIs() {
   document.getElementById('kpi2-idms').textContent = pct(idmsCount) + '%';
   document.getElementById('kpi2-can').textContent  = pct(canCount)  + '%';
 
-  /* Median install time KPIs */
+  /* Median install time KPIs — grouped by Camera Model Install (D450 / D810) */
   const d450Durations = filtered
-    .filter(r => /d450/i.test(String(r[COL.products] ?? '')))
+    .filter(r => String(r[COL.cameraModel] ?? '').trim() === 'D450')
     .map(r => computeInstallDuration(r))
     .filter(d => d !== null);
   const d810Durations = filtered
-    .filter(r => /d810/i.test(String(r[COL.products] ?? '')))
+    .filter(r => String(r[COL.cameraModel] ?? '').trim() === 'D810')
     .map(r => computeInstallDuration(r))
     .filter(d => d !== null);
 
