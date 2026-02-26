@@ -241,8 +241,8 @@
       </div>
       <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
-          <div class="kpi-value" id="kpi-idms-portal">0</div>
-          <div class="kpi-label">IDMS Portal Verification Completed</div>
+          <div class="kpi-value" id="kpi-idms-portal">0 / 0</div>
+          <div class="kpi-label">IDMS Portal Verification - Completed / Needed</div>
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
@@ -1137,20 +1137,21 @@ const PART_COLS = [
 function renderTab2KPIs() {
   /* Installation counts — completed / needed from Products Needed + Campaign Status */
   const ddtNeeded  = filtered.filter(r => /ddt/i.test(String(r[COL.products] ?? ''))).length;
-  const ddtDone    = filtered.filter(r => /ddt/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
+  const ddtDone    = filtered.filter(r => hasValue(r[COL.ddtSerial])).length;
   const vbusNeeded = filtered.filter(r => /vdr|vbus/i.test(String(r[COL.products] ?? ''))).length;
-  const vbusDone   = filtered.filter(r => /vdr|vbus/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
+  const vbusDone   = filtered.filter(r => hasValue(r[COL.vbusSerial])).length;
   const hapticNeeded = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? ''))).length;
   const hapticDone   = filtered.filter(r => /haptic/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
   const d810Needed   = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? ''))).length;
   const d810Done     = filtered.filter(r => /d810/i.test(String(r[COL.products] ?? '')) && /done|removed|replaced/i.test(String(r[COL.status] ?? ''))).length;
-  const idmsPortalCount = filtered.filter(r => hasValue(r[COL.idmsPortal])).length;
+  const idmsPortalNeeded = filtered.filter(r => hasValue(r[COL.idmsPortal])).length;
+  const idmsPortalDone   = filtered.filter(r => hasValue(r[COL.verifiedIDMS])).length;
 
   document.getElementById('kpi2-ddt').textContent     = ddtDone.toLocaleString() + ' / ' + ddtNeeded.toLocaleString();
   document.getElementById('kpi2-vbus').textContent    = vbusDone.toLocaleString() + ' / ' + vbusNeeded.toLocaleString();
   document.getElementById('kpi2-haptic').textContent  = hapticDone.toLocaleString() + ' / ' + hapticNeeded.toLocaleString();
   document.getElementById('kpi2-d810').textContent    = d810Done.toLocaleString() + ' / ' + d810Needed.toLocaleString();
-  document.getElementById('kpi-idms-portal').textContent = idmsPortalCount.toLocaleString();
+  document.getElementById('kpi-idms-portal').textContent = idmsPortalDone.toLocaleString() + ' / ' + idmsPortalNeeded.toLocaleString();
 
   /* Compliance / verification rates */
   const total = filtered.length;
