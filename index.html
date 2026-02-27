@@ -277,6 +277,30 @@
           <div class="kpi-label">Median D810 Install Time (hrs)</div>
         </div>
       </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#6f42c1">
+          <div class="kpi-value" id="kpi-me-count">—</div>
+          <div class="kpi-label">Completed w/ MirrorEye</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-me-card" style="background:#0d6efd">
+          <div class="kpi-value" id="kpi-median-me">—</div>
+          <div class="kpi-label">Median MirrorEye Install (hrs)</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" style="background:#198754">
+          <div class="kpi-value" id="kpi-median-nome">—</div>
+          <div class="kpi-label">Median Non-MirrorEye Install (hrs)</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-me-delta-card" style="background:#fd7e14">
+          <div class="kpi-value" id="kpi-me-delta">—</div>
+          <div class="kpi-label">MirrorEye &Delta; vs Non-MirrorEye (hrs)</div>
+        </div>
+      </div>
     </div>
 
     <!-- ══ Section 2: Compliance & Verification Rates ══ -->
@@ -660,6 +684,10 @@ function hasValue(val) {
   return trimmed !== '' && trimmed !== '-' && trimmed.toLowerCase() !== 'n/a';
 }
 
+function hasMirrorEye(row) {
+  return /^installed$/i.test(String(row[COL.mirrorEye] ?? '').trim());
+}
+
 /* ============================================================
    INIT
    ============================================================ */
@@ -889,6 +917,7 @@ function toDateStr(val) {
 const MS_PER_HOUR = 3600000;
 const D450_THRESHOLD_HOURS = 3.0;
 const D810_THRESHOLD_HOURS = 6.0;
+const MIRROREYE_THRESHOLD_HOURS = 3.0;
 
 function parseTimestamp(val) {
   if (!val) return null;
@@ -933,7 +962,7 @@ function computeMedian(arr) {
    ============================================================ */
 function renderKPIs() {
   const total    = filtered.length;
-  const done     = filtered.filter(r => /done/i.test(r[COL.status] ?? '')).length;
+  const done     = filtered.filter(r => hasValue(r[COL.vbusSerial])).length;
   const removed  = filtered.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
   const replaced = filtered.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
   const scheduled = filtered.filter(r => r[COL.scheduledDate]).length;
@@ -1244,6 +1273,41 @@ function renderTab2KPIs() {
   } else {
     document.getElementById('kpi-median-d810').textContent = medianD810.toFixed(2);
     d810Card.classList.toggle('kpi-danger', medianD810 >= D810_THRESHOLD_HOURS);
+  }
+
+  /* MirrorEye install-time KPIs (completed = has VBUS Serial Number) */
+  const completedRows = filtered.filter(r => hasValue(r[COL.vbusSerial]));
+  const meRows    = completedRows.filter(r => hasMirrorEye(r));
+  const noMeRows  = completedRows.filter(r => !hasMirrorEye(r));
+
+  const meDurations   = meRows.map(r => computeInstallDuration(r)).filter(d => d !== null);
+  const noMeDurations = noMeRows.map(r => computeInstallDuration(r)).filter(d => d !== null);
+
+  const medianMe   = computeMedian(meDurations);
+  const medianNoMe = computeMedian(noMeDurations);
+  const meDelta    = (medianMe !== null && medianNoMe !== null) ? medianMe - medianNoMe : null;
+
+  const meCard     = document.getElementById('kpi-median-me-card');
+  const meDeltaCard = document.getElementById('kpi-me-delta-card');
+
+  document.getElementById('kpi-me-count').textContent = meRows.length.toLocaleString();
+
+  if (medianMe === null) {
+    document.getElementById('kpi-median-me').textContent = '—';
+    meCard.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-me').textContent = medianMe.toFixed(2);
+    meCard.classList.toggle('kpi-danger', medianMe >= MIRROREYE_THRESHOLD_HOURS);
+  }
+
+  document.getElementById('kpi-median-nome').textContent = medianNoMe !== null ? medianNoMe.toFixed(2) : '—';
+
+  if (meDelta === null) {
+    document.getElementById('kpi-me-delta').textContent = '—';
+    meDeltaCard.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-me-delta').textContent = (meDelta >= 0 ? '+' : '') + meDelta.toFixed(2);
+    meDeltaCard.classList.toggle('kpi-danger', meDelta > 0);
   }
 }
 
