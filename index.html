@@ -1,55 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <script src="path/to/your/script.js"></script>
 </head>
 <body>
-    <!-- Existing KPI Cards -->
-    <div id="kpi-median-d450-card">
-        <h3>Median D450 Install Time</h3>
-        <!-- Existing KPI Content -->
+    <h1>Dashboard</h1>
+    <div id="kpi-cards">
+        <div class="kpi-card" id="median-d450-installed">
+            <h2>Median D450 Install Time</h2>
+            <p>Status: Installed</p>
+        </div>
+        <div class="kpi-card" id="median-d450-na">
+            <h2>Median D450 Install Time</h2>
+            <p>Status: N/A</p>
+        </div>
     </div>
-    <div id="kpi-median-d450-me-installed-card">
-        <h3>MirrorEye Installed</h3>
-        <!-- New KPI Content for Installed -->
-    </div>
-    <div id="kpi-median-d450-me-na-card">
-        <h3>MirrorEye N/A</h3>
-        <!-- New KPI Content for N/A -->
-    </div>
-
     <script>
         function renderTab2KPIs() {
-            // Existing median calculation
-            // Add logic here for new MirrorEye KPI calculations
-            const medianInstalled = computeMedian(COL.mirrorEye.map(item => item['Installed']));
-            const medianNA = computeMedian(COL.mirrorEye.map(item => item['N/A']));
-            // Update the DOM with the new KPIs
-            document.getElementById('kpi-median-d450-me-installed-card').innerText = medianInstalled;
-            document.getElementById('kpi-median-d450-me-na-card').innerText = medianNA;
+            // your existing implementation
         }
-
         function setupKPIClickHandlers() {
-            document.getElementById('kpi-median-d450-me-installed-card').onclick = function() {
-                const filter = [COL.startTs, COL.endTs, '__duration__'];
-                const tableOnlyFilter = 'installed'; // Example subset
-                renderInstallTable(filter);
-                scrollToVehicleRecords();
+            document.getElementById('median-d450-installed').onclick = function() {
+                filterRows('Installed');
+                highlightColumns();
             };
-            document.getElementById('kpi-median-d450-me-na-card').onclick = function() {
-                const filter = [COL.startTs, COL.endTs, '__duration__'];
-                const tableOnlyFilter = 'na'; // Example subset
-                renderInstallTable(filter);
-                scrollToVehicleRecords();
+            document.getElementById('median-d450-na').onclick = function() {
+                filterRows('N/A');
+                highlightColumns();
             };
         }
-
-        // Call setup function 
-        setupKPIClickHandlers();
-        renderTab2KPIs();
+        function filterRows(status) {
+            // implementation to filter rows based on status
+        }
+        function highlightColumns() {
+            // implementation to highlight start/end/duration columns
+        }
     </script>
 </body>
 </html>
