@@ -272,6 +272,18 @@
         </div>
       </div>
       <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d450-no-me-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d450-no-me">—</div>
+          <div class="kpi-label">Median D450 Install Time (hrs) – No MirrorEye</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d450-me-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d450-me">—</div>
+          <div class="kpi-label">Median D450 Install Time (hrs) – With MirrorEye</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
         <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d810-card" style="background:#17a2b8">
           <div class="kpi-value" id="kpi-median-d810">—</div>
           <div class="kpi-label">Median D810 Install Time (hrs)</div>
@@ -813,6 +825,43 @@ function setupKPIClickHandlers() {
     renderInstallTable();
     scrollToVehicleRecords();
   });
+
+  // Median D450 KPIs – scroll to installation table and briefly highlight timestamp columns
+  const highlightInstallTimestampCols = () => {
+    const ths = document.querySelectorAll('#install-table thead th');
+    const targets = [COL.startTs, COL.endTs, 'Install Duration (hrs)'];
+    ths.forEach(th => {
+      if (targets.includes(th.textContent.trim())) {
+        th.style.outline = '3px solid #fff';
+        th.style.outlineOffset = '-3px';
+        setTimeout(() => { th.style.outline = ''; th.style.outlineOffset = ''; }, 2500);
+      }
+    });
+  };
+
+  const d450MedianCard = document.getElementById('kpi-median-d450-card');
+  d450MedianCard.style.cursor = 'pointer';
+  addClickableIcon(d450MedianCard);
+  d450MedianCard.addEventListener('click', () => {
+    scrollToVehicleRecords();
+    highlightInstallTimestampCols();
+  });
+
+  const d450NoMeCard = document.getElementById('kpi-median-d450-no-me-card');
+  d450NoMeCard.style.cursor = 'pointer';
+  addClickableIcon(d450NoMeCard);
+  d450NoMeCard.addEventListener('click', () => {
+    scrollToVehicleRecords();
+    highlightInstallTimestampCols();
+  });
+
+  const d450MeCard = document.getElementById('kpi-median-d450-me-card');
+  d450MeCard.style.cursor = 'pointer';
+  addClickableIcon(d450MeCard);
+  d450MeCard.addEventListener('click', () => {
+    scrollToVehicleRecords();
+    highlightInstallTimestampCols();
+  });
 }
 
 function scrollToVehicleRecords() {
@@ -926,6 +975,15 @@ function computeMedian(arr) {
   const sorted = arr.slice().sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function isMirrorEyeInstalled(row) {
+  return /^installed$/i.test(String(row[COL.mirrorEye] ?? '').trim());
+}
+
+function isMirrorEyeAbsent(row) {
+  const v = String(row[COL.mirrorEye] ?? '').trim();
+  return v === '' || /^n\/a$/i.test(v);
 }
 
 /* ============================================================
@@ -1056,13 +1114,10 @@ const COMPLETION_COLS = [
   COL.ddtPart,
   COL.ddtBracket,
   COL.hapticSeat,
-  COL.hapticPart,
   COL.cameraModel,
   COL.newCameraSerial,
   COL.removedCamera,
   COL.d450Part,
-  COL.dr20Part,
-  COL.extCameras,
   COL.l2CamPart,
   COL.l2CamSerial,
   COL.r1CamPart,
@@ -1071,19 +1126,13 @@ const COMPLETION_COLS = [
   COL.r2CamSerial,
   COL.boCamPart,
   COL.boCamSerial,
-  COL.extCamBracket,
   COL.inVehicleDisp,
   COL.displayPart,
   COL.driverBtn,
-  COL.driverBtnPart,
   COL.verifiedIDMS,
   COL.canCheck,
-  COL.busLoad,
   COL.preBusLoad,
   COL.tracedBus,
-  COL.otrTest,
-  COL.idmsPortal,
-  COL.netradyne,
   COL.xirgo,
   COL.geotab,
   COL.truckWings,
@@ -1095,7 +1144,7 @@ const COMPLETION_COLS = [
 
 function computeCompletion(row) {
   if (!activeCompletionCols.length) return 0;
-  const filled = activeCompletionCols.filter(col => hasValue(row[col])).length;
+  const filled = activeCompletionCols.filter(col => String(row[col] ?? '').trim() !== '').length;
   return Math.round(filled / activeCompletionCols.length * 100);
 }
 
@@ -1215,8 +1264,16 @@ function renderTab2KPIs() {
   document.getElementById('kpi2-otr').textContent  = pct(otrCount)  + '%';
 
   /* Median install time KPIs */
-  const d450Durations = filtered
-    .filter(r => /d450/i.test(String(r[COL.products] ?? '')))
+  const d450Rows = filtered.filter(r => /d450/i.test(String(r[COL.products] ?? '')));
+  const d450Durations = d450Rows
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+  const d450NoMeDurations = d450Rows
+    .filter(r => isMirrorEyeAbsent(r))
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+  const d450MeDurations = d450Rows
+    .filter(r => isMirrorEyeInstalled(r))
     .map(r => computeInstallDuration(r))
     .filter(d => d !== null);
   const d810Durations = filtered
@@ -1224,11 +1281,15 @@ function renderTab2KPIs() {
     .map(r => computeInstallDuration(r))
     .filter(d => d !== null);
 
-  const medianD450 = computeMedian(d450Durations);
-  const medianD810 = computeMedian(d810Durations);
+  const medianD450    = computeMedian(d450Durations);
+  const medianD450NoMe = computeMedian(d450NoMeDurations);
+  const medianD450Me  = computeMedian(d450MeDurations);
+  const medianD810    = computeMedian(d810Durations);
 
-  const d450Card = document.getElementById('kpi-median-d450-card');
-  const d810Card = document.getElementById('kpi-median-d810-card');
+  const d450Card     = document.getElementById('kpi-median-d450-card');
+  const d450NoMeCard = document.getElementById('kpi-median-d450-no-me-card');
+  const d450MeCard   = document.getElementById('kpi-median-d450-me-card');
+  const d810Card     = document.getElementById('kpi-median-d810-card');
 
   if (medianD450 === null) {
     document.getElementById('kpi-median-d450').textContent = '—';
@@ -1236,6 +1297,22 @@ function renderTab2KPIs() {
   } else {
     document.getElementById('kpi-median-d450').textContent = medianD450.toFixed(2);
     d450Card.classList.toggle('kpi-danger', medianD450 >= D450_THRESHOLD_HOURS);
+  }
+
+  if (medianD450NoMe === null) {
+    document.getElementById('kpi-median-d450-no-me').textContent = '—';
+    d450NoMeCard.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d450-no-me').textContent = medianD450NoMe.toFixed(2);
+    d450NoMeCard.classList.toggle('kpi-danger', medianD450NoMe >= D450_THRESHOLD_HOURS);
+  }
+
+  if (medianD450Me === null) {
+    document.getElementById('kpi-median-d450-me').textContent = '—';
+    d450MeCard.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d450-me').textContent = medianD450Me.toFixed(2);
+    d450MeCard.classList.toggle('kpi-danger', medianD450Me >= D450_THRESHOLD_HOURS);
   }
 
   if (medianD810 === null) {
