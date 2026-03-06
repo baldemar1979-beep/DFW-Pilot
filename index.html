@@ -257,6 +257,18 @@
           <div class="kpi-label">Median D810 Install Time (hrs) - Start/End Timestamp</div>
         </div>
       </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d450-me-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d450-me">—</div>
+          <div class="kpi-label">Median D450 Install Time (hrs) - MirrorEye Installed</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d450-no-me-card" style="background:#17a2b8">
+          <div class="kpi-value" id="kpi-median-d450-no-me">—</div>
+          <div class="kpi-label">Median D450 Install Time (hrs) - MirrorEye Not Installed</div>
+        </div>
+      </div>
     </div>
 
     <!-- ══ Section 2: Compliance & Verification Rates ══ -->
@@ -743,7 +755,7 @@ function setupKPIClickHandlers() {
   addHighlightKPI('kpi2-d810', [COL.products]);
 
   // IDMS Portal Verification Completed
-  addHighlightKPI('kpi-idms-portal', [COL.idmsPortal]);
+  addHighlightKPI('kpi-idms-portal', [COL.verifiedIDMS]);
 
   // Median D450 install time – highlight timestamps and duration column
   addHighlightKPI('kpi-median-d450', [COL.startTs, COL.endTs, '__duration__']);
@@ -751,11 +763,17 @@ function setupKPIClickHandlers() {
   // Median D810 install time
   addHighlightKPI('kpi-median-d810', [COL.startTs, COL.endTs, '__duration__']);
 
+  // Median D450 install time – MirrorEye Installed
+  addHighlightKPI('kpi-median-d450-me', [COL.startTs, COL.endTs, '__duration__']);
+
+  // Median D450 install time – MirrorEye Not Installed
+  addHighlightKPI('kpi-median-d450-no-me', [COL.startTs, COL.endTs, '__duration__']);
+
   // SOP Compliance
   addHighlightKPI('kpi2-sop', [COL.sopNeed, COL.netradyne]);
 
   // IDMS Verification
-  addHighlightKPI('kpi2-idms', [COL.verifiedIDMS, COL.idmsPortal]);
+  addHighlightKPI('kpi2-idms', [COL.verifiedIDMS]);
 
   // CAN Check Pass
   addHighlightKPI('kpi2-can', [COL.canCheck, COL.busLoad, COL.preBusLoad, COL.tracedBus]);
@@ -1209,6 +1227,40 @@ function renderTab2KPIs() {
   } else {
     document.getElementById('kpi-median-d810').textContent = medianD810.toFixed(2);
     d810Card.classList.toggle('kpi-danger', medianD810 >= D810_THRESHOLD_HOURS);
+  }
+
+  /* Median D450 install time split by MirrorEye */
+  const d450MirrorEyeDurations = filtered
+    .filter(r => String(r[COL.cameraModel] ?? '').trim() === 'D450' &&
+                 /^installed$/i.test(String(r[COL.mirrorEye] ?? '').trim()))
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+  const d450NoMirrorEyeDurations = filtered
+    .filter(r => String(r[COL.cameraModel] ?? '').trim() === 'D450' &&
+                 !/^installed$/i.test(String(r[COL.mirrorEye] ?? '').trim()))
+    .map(r => computeInstallDuration(r))
+    .filter(d => d !== null);
+
+  const medianD450Me   = computeMedian(d450MirrorEyeDurations);
+  const medianD450NoMe = computeMedian(d450NoMirrorEyeDurations);
+
+  const d450MeCard   = document.getElementById('kpi-median-d450-me-card');
+  const d450NoMeCard = document.getElementById('kpi-median-d450-no-me-card');
+
+  if (medianD450Me === null) {
+    document.getElementById('kpi-median-d450-me').textContent = '—';
+    d450MeCard.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d450-me').textContent = medianD450Me.toFixed(2);
+    d450MeCard.classList.toggle('kpi-danger', medianD450Me >= D450_THRESHOLD_HOURS);
+  }
+
+  if (medianD450NoMe === null) {
+    document.getElementById('kpi-median-d450-no-me').textContent = '—';
+    d450NoMeCard.classList.remove('kpi-danger');
+  } else {
+    document.getElementById('kpi-median-d450-no-me').textContent = medianD450NoMe.toFixed(2);
+    d450NoMeCard.classList.toggle('kpi-danger', medianD450NoMe >= D450_THRESHOLD_HOURS);
   }
 }
 
