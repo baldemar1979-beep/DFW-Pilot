@@ -607,6 +607,10 @@ function hasValue(val) {
   return trimmed !== '' && trimmed !== '-' && trimmed.toLowerCase() !== 'n/a';
 }
 
+function hasNonBlankValue(val) {
+  return String(val ?? '').trim() !== '';
+}
+
 /* ============================================================
    INIT
    ============================================================ */
@@ -1007,9 +1011,6 @@ function renderCharts() {
    Only the fields below are considered "fillable" for completion tracking.
    ============================================================ */
 const COMPLETION_COLS = [
-  COL.preInstall,
-  COL.firstArticle,
-  COL.afpHandoff,
   COL.sopNeed,
   COL.cableHarness,
   COL.canalyzer,
@@ -1036,18 +1037,14 @@ const COMPLETION_COLS = [
   COL.r2CamSerial,
   COL.boCamPart,
   COL.boCamSerial,
-  COL.extCamBracket,
   COL.inVehicleDisp,
   COL.displayPart,
   COL.driverBtn,
   COL.driverBtnPart,
   COL.verifiedIDMS,
   COL.canCheck,
-  COL.busLoad,
   COL.preBusLoad,
   COL.tracedBus,
-  COL.otrTest,
-  COL.idmsPortal,
   COL.netradyne,
   COL.xirgo,
   COL.geotab,
@@ -1060,7 +1057,7 @@ const COMPLETION_COLS = [
 
 function computeCompletion(row) {
   if (!activeCompletionCols.length) return 0;
-  const filled = activeCompletionCols.filter(col => hasValue(row[col])).length;
+  const filled = activeCompletionCols.filter(col => hasNonBlankValue(row[col])).length;
   return Math.round(filled / activeCompletionCols.length * 100);
 }
 
