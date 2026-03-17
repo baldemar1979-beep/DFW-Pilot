@@ -401,16 +401,19 @@
   <!-- Alerts Upload Zone -->
   <div id="alt-upload-section" class="mb-4">
     <div id="alt-upload-zone" class="p-2 d-flex align-items-center gap-3" role="button" tabindex="0"
-         aria-label="Upload Alerts Excel file – drag and drop or click to browse"
+         aria-label="Upload Alerts Excel files – drag and drop or click to browse"
          onclick="document.getElementById('alt-file-input').click()"
          onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('alt-file-input').click()">
       <div class="upload-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#f5a623"></i></div>
-      <span class="fw-semibold text-secondary small">Upload Alerts Excel File</span>
+      <div class="d-flex flex-column">
+        <span class="fw-semibold text-secondary small">Upload Alerts Excel Files</span>
+        <span id="alt-file-count" class="text-muted" style="font-size:.75rem;display:none"></span>
+      </div>
       <button class="btn btn-outline-primary btn-sm px-3 ms-auto"
               onclick="event.stopPropagation();document.getElementById('alt-file-input').click()">
-        <i class="bi bi-upload me-1"></i>Choose File
+        <i class="bi bi-upload me-1"></i>Choose Files
       </button>
-      <input type="file" id="alt-file-input" accept=".xlsx,.xls,.csv" />
+      <input type="file" id="alt-file-input" accept=".xlsx,.xls,.csv" multiple aria-label="Upload Alerts Excel files" />
     </div>
     <div id="alt-upload-error" class="alert alert-danger mt-2 d-none"></div>
   </div>
@@ -439,9 +442,8 @@
                 <th>Week</th>
                 <th class="text-end"># Vehicles</th>
                 <th class="text-end"># Partners</th>
-                <th class="text-end" title="Fatigue rows where Confirmation = Criteria Not Met — click to drill down">Total Events</th>
-                <th class="text-end" title="Rows not matching any known Fatigue classification (FOV)">Excl. FOV</th>
-                <th class="text-end" title="Rows where Confirmation = Criteria Not Met">Excl. Criteria Not Met</th>
+                <th class="text-end" title="All fatigue alerts (Criteria Not Met + Verified) — click to drill down">Total Events</th>
+                <th class="text-end" title="Fatigue alerts where Confirmation = Criteria Not Met — click to drill down">Invalid</th>
                 <th class="text-end" title="Fatigue - Microsleep or Drowsiness, Verified — click to drill down">Valid</th>
                 <th class="text-end" title="Max alerts any single vehicle received within a rolling 60-min window">Alerts per hour</th>
                 <th class="text-end" title="Daily alert threshold used for % of Program Impact">Alerts per day</th>
@@ -1590,7 +1592,7 @@ let ALT_rawData       = [];
 let ALT_weeklyData    = [];
 let ALT_alertsPerDay  = 10;
 let ALT_drillWeek     = null;  // week key currently drilled into
-let ALT_drillType     = null;  // 'total' | 'valid'
+let ALT_drillType     = null;  // 'total' | 'invalid' | 'valid'
 
 /* ── Upload zone wiring ── */
 const altUploadZone = document.getElementById('alt-upload-zone');
@@ -1601,33 +1603,50 @@ altUploadZone.addEventListener('dragleave', ()  => altUploadZone.classList.remov
 altUploadZone.addEventListener('drop',      e  => {
   e.preventDefault();
   altUploadZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) alertsProcessFile(file);
+  if (e.dataTransfer.files.length) alertsProcessFiles(e.dataTransfer.files);
 });
-altFileInput.addEventListener('change', () => { if (altFileInput.files[0]) alertsProcessFile(altFileInput.files[0]); });
+altFileInput.addEventListener('change', () => { if (altFileInput.files.length) alertsProcessFiles(altFileInput.files); });
 
-function alertsProcessFile(file) {
+function alertsProcessFiles(fileList) {
   const allowed = ['.xlsx', '.xls', '.csv'];
-  const ext = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')).toLowerCase() : '';
-  if (!allowed.includes(ext)) {
-    alertsShowError('Please upload an Excel (.xlsx / .xls) or CSV file.');
+  const files   = Array.from(fileList);
+  const invalid = files.filter(f => {
+    const ext = f.name.includes('.') ? f.name.slice(f.name.lastIndexOf('.')).toLowerCase() : '';
+    return !allowed.includes(ext);
+  });
+  if (invalid.length) {
+    alertsShowError('Please upload only Excel (.xlsx / .xls) or CSV files. Rejected: ' + invalid.map(f => f.name).join(', '));
     return;
   }
   alertsHideError();
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const wb     = XLSX.read(new Uint8Array(ev.target.result), { type: 'array', cellDates: true });
-      const ws     = wb.Sheets[wb.SheetNames[0]];
-      const parsed = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      if (!parsed.length) { alertsShowError('The file appears to be empty.'); return; }
-      ALT_rawData = parsed;
-      alertsInit();
-    } catch (err) {
-      alertsShowError('Could not parse file: ' + err.message);
-    }
-  };
-  reader.readAsArrayBuffer(file);
+
+  /* Read all files in parallel; accumulate rows, then rebuild once all done */
+  const accumulated = [];
+  let pending = files.length;
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb     = XLSX.read(new Uint8Array(ev.target.result), { type: 'array', cellDates: true });
+        const ws     = wb.Sheets[wb.SheetNames[0]];
+        const parsed = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        accumulated.push(...parsed);
+      } catch (err) {
+        alertsShowError('Could not parse ' + alertsEsc(file.name) + ': ' + err.message);
+      }
+      pending--;
+      if (pending === 0) {
+        if (!accumulated.length) { alertsShowError('No data rows found in the uploaded file(s).'); return; }
+        ALT_rawData = accumulated;
+        const countEl = document.getElementById('alt-file-count');
+        countEl.textContent = files.length + ' file' + (files.length > 1 ? 's' : '') + ' loaded · ' + accumulated.length.toLocaleString() + ' rows';
+        countEl.style.display = '';
+        alertsInit();
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 function alertsShowError(msg) {
@@ -1721,11 +1740,17 @@ function alertsBuildWeekly(rows) {
 
     const weekRows = byWeek[key] ? byWeek[key].rows : [];
 
-    const fatigueRows   = weekRows.filter(r => ALT_FATIGUE_CLASSES.has(r.cls.toLowerCase()));
-    const fovRows       = weekRows.filter(r => !ALT_FATIGUE_CLASSES.has(r.cls.toLowerCase()));
-    const totalEvents   = fatigueRows.filter(r => r.conf.toLowerCase() === 'criteria not met');
-    const exclCritNM    = weekRows.filter(r => r.conf.toLowerCase() === 'criteria not met');
-    const validRows     = fatigueRows.filter(r =>
+    /* All rows with a known fatigue classification */
+    const fatigueRows  = weekRows.filter(r => ALT_FATIGUE_CLASSES.has(r.cls.toLowerCase()));
+
+    /* Total Events = ALL fatigue rows (Criteria Not Met + Verified) */
+    const totalEvents  = fatigueRows;
+
+    /* Invalid = fatigue rows where Confirmation = "Criteria Not Met" */
+    const invalidRows  = fatigueRows.filter(r => r.conf.toLowerCase() === 'criteria not met');
+
+    /* Valid = Fatigue - Microsleep or Drowsiness, Verified */
+    const validRows    = fatigueRows.filter(r =>
       (r.cls.toLowerCase() === 'fatigue - microsleep' || r.cls.toLowerCase() === 'fatigue - drowsiness') &&
       r.conf.toLowerCase() === 'verified'
     );
@@ -1739,8 +1764,7 @@ function alertsBuildWeekly(rows) {
       vehicles: vehicles.size,
       partners: partners.size,
       totalEvents,
-      exclFOV:     fovRows.length,
-      exclCritNM:  exclCritNM.length,
+      invalidRows,
       validRows,
       alertsPerHour,
       fatigueRows,
@@ -1796,8 +1820,9 @@ function alertsRenderTable() {
   ALT_weeklyData.forEach(wd => {
     const impact = alertsComputeImpact(wd, threshold);
     const tr = document.createElement('tr');
-    const isActiveDrillTotal = ALT_drillWeek === wd.key && ALT_drillType === 'total';
-    const isActiveDrillValid = ALT_drillWeek === wd.key && ALT_drillType === 'valid';
+    const isActiveDrillTotal   = ALT_drillWeek === wd.key && ALT_drillType === 'total';
+    const isActiveDrillInvalid = ALT_drillWeek === wd.key && ALT_drillType === 'invalid';
+    const isActiveDrillValid   = ALT_drillWeek === wd.key && ALT_drillType === 'valid';
 
     tr.innerHTML =
       '<td class="text-nowrap">' + alertsEsc(wd.label) + '</td>' +
@@ -1806,8 +1831,9 @@ function alertsRenderTable() {
       '<td class="text-end alt-clickable-cell' + (isActiveDrillTotal ? ' table-active' : '') + '" ' +
           'data-week="' + wd.key + '" data-type="total" role="button" tabindex="0" ' +
           'title="Click to see Total Events detail">' + wd.totalEvents.length + '</td>' +
-      '<td class="text-end">' + wd.exclFOV + '</td>' +
-      '<td class="text-end">' + wd.exclCritNM + '</td>' +
+      '<td class="text-end alt-clickable-cell' + (isActiveDrillInvalid ? ' table-active' : '') + '" ' +
+          'data-week="' + wd.key + '" data-type="invalid" role="button" tabindex="0" ' +
+          'title="Click to see Invalid Events detail">' + wd.invalidRows.length + '</td>' +
       '<td class="text-end alt-clickable-cell' + (isActiveDrillValid ? ' table-active' : '') + '" ' +
           'data-week="' + wd.key + '" data-type="valid" role="button" tabindex="0" ' +
           'title="Click to see Valid Events detail">' + wd.validRows.length + '</td>' +
@@ -1845,8 +1871,8 @@ function alertsToggleDrill(weekKey, type) {
   const wd   = ALT_weeklyData.find(w => w.key === weekKey);
   if (!wd) return;
 
-  const rows      = type === 'total' ? wd.totalEvents : wd.validRows;
-  const typeLabel = type === 'total' ? 'Total Events' : 'Valid Events';
+  const rows      = type === 'total' ? wd.totalEvents : type === 'invalid' ? wd.invalidRows : wd.validRows;
+  const typeLabel = type === 'total' ? 'Total Events' : type === 'invalid' ? 'Invalid Events' : 'Valid Events';
 
   document.getElementById('alt-drill-title').textContent =
     wd.label + ' – ' + typeLabel + ' (' + rows.length + ' records)';
