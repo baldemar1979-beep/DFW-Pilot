@@ -1710,10 +1710,10 @@ function alertsBuildWeekly(rows) {
   const byWeek   = {};
 
   rows.forEach(row => {
-    const cls   = String(row['Classification']    ?? '').trim();
-    const conf  = String(row['Confirmation']      ?? '').trim();
-    const asset = String(row['Asset']             ?? '').trim();
-    const fleet = String(row['Fleet']             ?? '').trim();
+    const cls   = String(row['classification']    ?? '').trim();
+    const conf  = String(row['confirmation']      ?? '').trim();
+    const asset = String(row['vehicle']           ?? '').trim();
+    const fleet = String(row['fleet']             ?? '').trim();
     const dt    = alertsParseDate(row['confirmation_time']);
     if (!dt) return;
 
