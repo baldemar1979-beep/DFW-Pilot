@@ -447,8 +447,8 @@
                 <th class="text-end" title="Fatigue - Microsleep or Drowsiness alerts confirmed as &#34;Verified&#34; — genuine fatigue events. Click to drill down.">Valid</th>
                 <th class="text-end" title="Average across all vehicles of each vehicle's single worst 60-minute rolling window of total alerts for the week. Reflects overall in-cab notification burden.">Avg alerts/hr (Total)</th>
                 <th class="text-end" title="Average across all vehicles of each vehicle's single worst 60-minute rolling window of invalid-only (Criteria Not Met) alerts. Reflects avoidable driver distraction.">Avg alerts/hr (Invalid)</th>
-                <th class="text-end" title="The daily alert count threshold currently set by the user. A vehicle is considered &#34;impacted&#34; if it exceeded this number on any single day. Lowering this value sets a stricter standard, which will raise the % of Program Impact.">Alerts per day</th>
-                <th class="text-end" title="Percentage of vehicles that exceeded the daily alert threshold on at least one day this week. A higher % means more of the fleet was over-alerted. Because drivers receive in-cab notifications for ALL fatigue events (valid and invalid), this metric captures total driver distraction burden. Lowering the threshold raises this % because the standard becomes stricter.">% of Program Impact</th>
+                <th class="text-end" title="The daily alert count threshold currently set by the user. A vehicle is considered &#34;impacted&#34; if it exceeded this number on any single day. Lowering this value sets a stricter standard, which will raise the % Vehicles Exceeding Daily Threshold.">Daily Alert Threshold</th>
+                <th class="text-end" title="Percentage of vehicles that exceeded the daily alert threshold on at least one day this week. A higher % means more of the fleet was over-alerted. Because drivers receive in-cab notifications for ALL fatigue events (valid and invalid), this metric captures total driver distraction burden. Lowering the threshold raises this % because the standard becomes stricter.">% Vehicles Exceeding Daily Threshold</th>
               </tr>
             </thead>
             <tbody id="alt-table-body"></tbody>
@@ -495,15 +495,15 @@
             <dt class="col-sm-3">Avg alerts/hr (Invalid)</dt>
             <dd class="col-sm-9">Average across all vehicles of each vehicle's single worst 60-minute rolling window of invalid-only (Criteria Not Met) alerts. Reflects avoidable driver distraction.</dd>
 
-            <dt class="col-sm-3">Alerts per day</dt>
-            <dd class="col-sm-9">The daily alert count threshold currently set by the user. A vehicle is considered "impacted" if it exceeded this number on any single day. Lowering this value sets a stricter standard, which will raise the % of Program Impact.</dd>
+            <dt class="col-sm-3">Daily Alert Threshold</dt>
+            <dd class="col-sm-9">The daily alert count threshold currently set by the user. A vehicle is considered "impacted" if it exceeded this number on any single day. Lowering this value sets a stricter standard, which will raise the % Vehicles Exceeding Daily Threshold.</dd>
 
-            <dt class="col-sm-3">% of Program Impact</dt>
+            <dt class="col-sm-3">% Vehicles Exceeding Daily Threshold</dt>
             <dd class="col-sm-9">Percentage of vehicles that exceeded the daily alert threshold on at least one day this week. A higher % means more of the fleet was over-alerted. Because drivers receive in-cab notifications for ALL fatigue events (valid and invalid), this metric captures total driver distraction burden. Lowering the threshold raises this % because the standard becomes stricter.</dd>
           </dl>
           <p class="text-muted mb-0 border-top pt-2">
-            <strong>Note on Alerts per day &amp; % of Program Impact:</strong>
-            Drivers receive an in-cab notification for every fatigue alert — valid or invalid. The "Alerts per day" input sets the maximum acceptable daily alert count. Lowering this threshold applies a stricter standard: more vehicles will appear as "impacted" because fewer alerts per day are considered acceptable. This is expected behavior — use a lower threshold when the goal is to minimize driver distraction.
+            <strong>Note on Daily Alert Threshold &amp; % Vehicles Exceeding Daily Threshold:</strong>
+            Drivers receive an in-cab notification for every fatigue alert — valid or invalid. The "Daily Alert Threshold" input sets the maximum acceptable daily alert count. Lowering this threshold applies a stricter standard: more vehicles will appear as "impacted" because fewer alerts per day are considered acceptable. This is expected behavior — use a lower threshold when the goal is to minimize driver distraction.
           </p>
         </div>
       </div>
@@ -1983,7 +1983,7 @@ document.getElementById('alt-alerts-per-day').addEventListener('input', function
     const span = document.querySelector('.alt-impact-pct[data-week="' + wd.key + '"]');
     if (span) span.textContent = alertsComputeImpact(wd, ALT_alertsPerDay) + '%';
   });
-  /* Also update the Alerts per day column cells */
+  /* Also update the Daily Alert Threshold column cells */
   document.querySelectorAll('.alt-apd-cell').forEach(td => {
     td.textContent = ALT_alertsPerDay;
   });
