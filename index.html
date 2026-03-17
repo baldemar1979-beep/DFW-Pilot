@@ -445,7 +445,8 @@
                 <th class="text-end" title="All fatigue alerts (Criteria Not Met + Verified) — click to drill down">Total Events</th>
                 <th class="text-end" title="Fatigue alerts where Confirmation = Criteria Not Met — click to drill down">Invalid</th>
                 <th class="text-end" title="Fatigue - Microsleep or Drowsiness, Verified — click to drill down">Valid</th>
-                <th class="text-end" title="Max alerts any single vehicle received within a rolling 60-min window">Alerts per hour</th>
+                <th class="text-end" title="Average of each vehicle's worst 60-min alert window for the week (all alerts — reflects total in-cab notification burden)">Avg alerts/hr (Total)</th>
+                <th class="text-end" title="Average of each vehicle's worst 60-min window of invalid-only alerts (Criteria Not Met) — reflects avoidable driver distraction">Avg alerts/hr (Invalid)</th>
                 <th class="text-end" title="Daily alert threshold used for % of Program Impact">Alerts per day</th>
                 <th class="text-end" title="% of vehicles that exceeded the daily threshold on at least one day">% of Program Impact</th>
               </tr>
@@ -470,6 +471,7 @@
           <table class="table table-sm table-hover mb-0" id="alt-drill-table">
             <thead>
               <tr>
+                <th>Event ID</th>
                 <th>Asset</th>
                 <th>Fleet</th>
                 <th>Classification</th>
@@ -1755,9 +1757,10 @@ function alertsBuildWeekly(rows) {
       r.conf.toLowerCase() === 'verified'
     );
 
-    const vehicles      = new Set(fatigueRows.map(r => r.asset).filter(Boolean));
-    const partners      = new Set(fatigueRows.map(r => r.fleet).filter(Boolean));
-    const alertsPerHour = alertsMaxPerHour(fatigueRows);
+    const vehicles                = new Set(fatigueRows.map(r => r.asset).filter(Boolean));
+    const partners                = new Set(fatigueRows.map(r => r.fleet).filter(Boolean));
+    const avgAlertsPerHourTotal   = alertsAvgMaxPerHour(fatigueRows, false);
+    const avgAlertsPerHourInvalid = alertsAvgMaxPerHour(fatigueRows, true);
 
     result.push({
       key, label, week: w,
@@ -1766,32 +1769,41 @@ function alertsBuildWeekly(rows) {
       totalEvents,
       invalidRows,
       validRows,
-      alertsPerHour,
+      avgAlertsPerHourTotal,
+      avgAlertsPerHourInvalid,
       fatigueRows,
     });
   }
   return result;
 }
 
-/** Max alerts received by any single vehicle within a 60-min rolling window */
-function alertsMaxPerHour(rows) {
+/** Average of each vehicle's worst 60-min rolling window alert count.
+ *  When invalidOnly=true, only counts rows where confirmation = "criteria not met". */
+function alertsAvgMaxPerHour(fatigueRows, invalidOnly) {
+  const rows = invalidOnly
+    ? fatigueRows.filter(r => r.conf.toLowerCase() === 'criteria not met')
+    : fatigueRows;
   if (!rows.length) return 0;
   const byAsset = {};
   rows.forEach(r => {
     if (!r.asset) return;
     (byAsset[r.asset] = byAsset[r.asset] || []).push(r.dt.getTime());
   });
-  let maxCount = 0;
-  Object.values(byAsset).forEach(times => {
-    times.sort((a, b) => a - b);
+  const assets = Object.keys(byAsset);
+  if (!assets.length) return 0;
+  let total = 0;
+  assets.forEach(asset => {
+    const times = byAsset[asset].slice().sort((a, b) => a - b);
+    let maxCount = 0;
     for (let i = 0; i < times.length; i++) {
       const windowEnd = times[i] + 3600000;
       let count = 0;
       for (let j = i; j < times.length && times[j] <= windowEnd; j++) count++;
       if (count > maxCount) maxCount = count;
     }
+    total += maxCount;
   });
-  return maxCount;
+  return Math.round((total / assets.length) * 10) / 10;
 }
 
 /** % of vehicles that exceeded `threshold` alerts on any single calendar day */
@@ -1837,7 +1849,8 @@ function alertsRenderTable() {
       '<td class="text-end alt-clickable-cell' + (isActiveDrillValid ? ' table-active' : '') + '" ' +
           'data-week="' + wd.key + '" data-type="valid" role="button" tabindex="0" ' +
           'title="Click to see Valid Events detail">' + wd.validRows.length + '</td>' +
-      '<td class="text-end">' + wd.alertsPerHour + '</td>' +
+      '<td class="text-end">' + wd.avgAlertsPerHourTotal.toFixed(1) + '</td>' +
+      '<td class="text-end">' + wd.avgAlertsPerHourInvalid.toFixed(1) + '</td>' +
       '<td class="text-end alt-apd-cell" data-week="' + wd.key + '">' + threshold + '</td>' +
       '<td class="text-end"><span class="alt-impact-pct" data-week="' + wd.key + '">' + impact + '%</span></td>';
 
@@ -1885,6 +1898,7 @@ function alertsToggleDrill(weekKey, type) {
       : alertsEsc(String(r.rawRow['confirmation_time'] ?? ''));
     const tr = document.createElement('tr');
     tr.innerHTML =
+      '<td>' + alertsEsc(String(r.rawRow['event_id'] ?? '')) + '</td>' +
       '<td>' + alertsEsc(r.asset) + '</td>' +
       '<td>' + alertsEsc(r.fleet) + '</td>' +
       '<td>' + alertsEsc(r.cls)   + '</td>' +
