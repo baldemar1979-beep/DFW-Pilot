@@ -127,6 +127,40 @@
     #install-table thead tr.filter-row input { font-size: .72rem; padding: 2px 4px; width: 100%; min-width: 40px; border: 1px solid rgba(255,255,255,.3); border-radius: 3px; background: rgba(255,255,255,.15); color: #fff; }
     #install-table thead tr.filter-row input::placeholder { color: rgba(255,255,255,.7); }
     #install-table thead tr.filter-row input:focus { background: rgba(255,255,255,.25); outline: none; }
+
+    /* ── Alerts section ── */
+    #alt-upload-zone {
+      border: 3px dashed #adb5bd;
+      border-radius: 12px;
+      background: #fff;
+      transition: border-color .25s, background .25s;
+      cursor: pointer;
+    }
+    #alt-upload-zone.dragover { border-color: var(--brand-blue); background: #e8f0ff; }
+    #alt-upload-zone .upload-icon { font-size: 1.5rem; color: #adb5bd; }
+    #alt-file-input { display: none; }
+
+    #alt-weekly-table { font-size: .78rem; white-space: nowrap; }
+    #alt-weekly-table thead th {
+      background: var(--brand-blue); color: #fff;
+      font-weight: 600; padding: 8px 10px;
+    }
+    #alt-weekly-table tbody tr:hover { background: #eef3ff; }
+
+    #alt-drill-table { font-size: .78rem; }
+    #alt-drill-table thead th {
+      background: var(--brand-blue); color: #fff;
+      font-weight: 600; padding: 8px 10px;
+    }
+    #alt-drill-table tbody tr:hover { background: #eef3ff; }
+
+    .alt-clickable-cell {
+      cursor: pointer;
+      color: var(--brand-blue);
+      text-decoration: underline dotted;
+      font-weight: 600;
+    }
+    .alt-clickable-cell:hover { background: #dce8ff !important; color: #001f5c; }
   </style>
 </head>
 
@@ -358,6 +392,154 @@
 <footer class="text-center py-3 mt-2">
   DFW Pilot Installation Tracker &mdash; upload an end-of-shift Excel to begin
 </footer>
+
+<!-- ══════════════════════════════════════════════════════════
+     FATIGUE ALERTS SECTION – standalone, zero coupling to above
+     ══════════════════════════════════════════════════════════ -->
+<div class="container-fluid px-4 mt-4 pb-5">
+
+  <!-- Alerts Upload Zone -->
+  <div id="alt-upload-section" class="mb-4">
+    <div id="alt-upload-zone" class="p-2 d-flex align-items-center gap-3" role="button" tabindex="0"
+         aria-label="Upload Alerts Excel files – drag and drop or click to browse"
+         onclick="document.getElementById('alt-file-input').click()"
+         onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('alt-file-input').click()">
+      <div class="upload-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#f5a623"></i></div>
+      <div class="d-flex flex-column">
+        <span class="fw-semibold text-secondary small">Upload Alerts Excel Files</span>
+        <span id="alt-file-count" class="text-muted" style="font-size:.75rem;display:none"></span>
+      </div>
+      <button class="btn btn-outline-primary btn-sm px-3 ms-auto"
+              onclick="event.stopPropagation();document.getElementById('alt-file-input').click()">
+        <i class="bi bi-upload me-1"></i>Choose Files
+      </button>
+      <input type="file" id="alt-file-input" accept=".xlsx,.xls,.csv" multiple aria-label="Upload Alerts Excel files" />
+    </div>
+    <div id="alt-upload-error" class="alert alert-danger mt-2 d-none"></div>
+  </div>
+
+  <!-- Alerts Dashboard (hidden until data loaded) -->
+  <div id="alt-section" class="d-none">
+
+    <!-- Section header + controls -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+      <h5 class="section-title mb-0">
+        <i class="bi bi-truck me-2" style="color:var(--brand-gold)"></i>Fatigue Alerts Weekly Summary
+      </h5>
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label fw-semibold small mb-0" for="alt-alerts-per-day">Alerts per day threshold:</label>
+        <input type="number" id="alt-alerts-per-day" class="form-control form-control-sm" value="10" min="1" style="width:80px" />
+      </div>
+    </div>
+
+    <!-- Weekly summary table -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0" id="alt-weekly-table">
+            <thead>
+              <tr>
+                <th title="ISO calendar week and date range covered">Week</th>
+                <th class="text-end" title="Distinct vehicles (assets) that had at least one fatigue alert this week"># Vehicles</th>
+                <th class="text-end" title="Distinct fleet/partner organizations represented this week"># Partners</th>
+                <th class="text-end" title="All fatigue alerts regardless of confirmation status (Criteria Not Met + Verified). Click to drill down.">Total Events</th>
+                <th class="text-end" title="Fatigue alerts confirmed as &#34;Criteria Not Met&#34; — the system fired but the driver was not actually fatigued. These still cause an in-cab distraction. Click to drill down.">Invalid</th>
+                <th class="text-end" title="Fatigue - Microsleep or Drowsiness alerts confirmed as &#34;Verified&#34; — genuine fatigue events. Click to drill down.">Valid</th>
+                <th class="text-end" title="Average across all vehicles of each vehicle's single worst 60-minute rolling window of total alerts for the week. Reflects overall in-cab notification burden.">Avg alerts/hr (Total)</th>
+                <th class="text-end" title="Average across all vehicles of each vehicle's single worst 60-minute rolling window of invalid-only (Criteria Not Met) alerts. Reflects avoidable driver distraction.">Avg alerts/hr (Invalid)</th>
+                <th class="text-end" title="The daily alert count threshold currently set by the user. A vehicle is considered &#34;impacted&#34; if it exceeded this number on any single day. Lowering this value sets a stricter standard, which will raise the % Vehicles Exceeding Daily Threshold.">Daily Alert Threshold</th>
+                <th class="text-end" title="Percentage of vehicles that exceeded the daily alert threshold on at least one day this week. A higher % means more of the fleet was over-alerted. Because drivers receive in-cab notifications for ALL fatigue events (valid and invalid), this metric captures total driver distraction burden. Lowering the threshold raises this % because the standard becomes stricter.">% Vehicles Exceeding Daily Threshold</th>
+              </tr>
+            </thead>
+            <tbody id="alt-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column Definitions legend (collapsible, expanded by default) -->
+    <div class="card shadow-sm mb-4" id="alt-legend-card">
+      <div class="card-header d-flex align-items-center justify-content-between"
+           style="background:var(--brand-blue);color:#fff;border-radius:0">
+        <span class="fw-semibold small">ℹ️ Column Definitions</span>
+        <button class="btn btn-sm btn-outline-light py-0" type="button"
+                data-bs-toggle="collapse" data-bs-target="#alt-legend-body"
+                aria-expanded="true" aria-controls="alt-legend-body">
+          Hide / Show
+        </button>
+      </div>
+      <div class="collapse show" id="alt-legend-body">
+        <div class="card-body small">
+          <dl class="row mb-2">
+            <dt class="col-sm-3">Week</dt>
+            <dd class="col-sm-9">ISO calendar week and date range covered.</dd>
+
+            <dt class="col-sm-3"># Vehicles</dt>
+            <dd class="col-sm-9">Distinct vehicles (assets) that had at least one fatigue alert this week.</dd>
+
+            <dt class="col-sm-3"># Partners</dt>
+            <dd class="col-sm-9">Distinct fleet/partner organizations represented this week.</dd>
+
+            <dt class="col-sm-3">Total Events</dt>
+            <dd class="col-sm-9">All fatigue alerts regardless of confirmation status (Criteria Not Met + Verified). Click to drill down.</dd>
+
+            <dt class="col-sm-3">Invalid</dt>
+            <dd class="col-sm-9">Fatigue alerts confirmed as "Criteria Not Met" — the system fired but the driver was not actually fatigued. These still cause an in-cab distraction. Click to drill down.</dd>
+
+            <dt class="col-sm-3">Valid</dt>
+            <dd class="col-sm-9">Fatigue - Microsleep or Drowsiness alerts confirmed as "Verified" — genuine fatigue events. Click to drill down.</dd>
+
+            <dt class="col-sm-3">Avg alerts/hr (Total)</dt>
+            <dd class="col-sm-9">Average across all vehicles of each vehicle's single worst 60-minute rolling window of total alerts for the week. Reflects overall in-cab notification burden.</dd>
+
+            <dt class="col-sm-3">Avg alerts/hr (Invalid)</dt>
+            <dd class="col-sm-9">Average across all vehicles of each vehicle's single worst 60-minute rolling window of invalid-only (Criteria Not Met) alerts. Reflects avoidable driver distraction.</dd>
+
+            <dt class="col-sm-3">Daily Alert Threshold</dt>
+            <dd class="col-sm-9">The daily alert count threshold currently set by the user. A vehicle is considered "impacted" if it exceeded this number on any single day. Lowering this value sets a stricter standard, which will raise the % Vehicles Exceeding Daily Threshold.</dd>
+
+            <dt class="col-sm-3">% Vehicles Exceeding Daily Threshold</dt>
+            <dd class="col-sm-9">Percentage of vehicles that exceeded the daily alert threshold on at least one day this week. A higher % means more of the fleet was over-alerted. Because drivers receive in-cab notifications for ALL fatigue events (valid and invalid), this metric captures total driver distraction burden. Lowering the threshold raises this % because the standard becomes stricter.</dd>
+          </dl>
+          <p class="text-muted mb-0 border-top pt-2">
+            <strong>Note on Daily Alert Threshold &amp; % Vehicles Exceeding Daily Threshold:</strong>
+            Drivers receive an in-cab notification for every fatigue alert — valid or invalid. The "Daily Alert Threshold" input sets the maximum acceptable daily alert count. Lowering this threshold applies a stricter standard: more vehicles will appear as "impacted" because fewer alerts per day are considered acceptable. This is expected behavior — use a lower threshold when the goal is to minimize driver distraction.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drill-down panel (hidden until a cell is clicked) -->
+    <div id="alt-drill-panel" class="card shadow-sm mb-4 d-none">
+      <div class="card-header d-flex align-items-center justify-content-between"
+           style="background:var(--brand-blue);color:#fff;border-radius:0">
+        <span class="fw-semibold small" id="alt-drill-title"></span>
+        <button class="btn btn-sm btn-outline-light py-0" id="alt-drill-close" title="Close detail panel">
+          <i class="bi bi-x-lg"></i> Close
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height:400px;overflow-y:auto">
+          <table class="table table-sm table-hover mb-0" id="alt-drill-table">
+            <thead>
+              <tr>
+                <th>Event ID</th>
+                <th>Asset</th>
+                <th>Fleet</th>
+                <th>Classification</th>
+                <th>Confirmation</th>
+                <th>confirmation_time</th>
+              </tr>
+            </thead>
+            <tbody id="alt-drill-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /alt-section -->
+
+</div><!-- /alerts container -->
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1443,6 +1625,375 @@ document.getElementById('btn-reset-install-details').addEventListener('click', (
   // Clear any filter-row input values
   document.querySelectorAll('.col-filter-input').forEach(inp => { inp.value = ''; });
   renderInstallTable();
+});
+</script>
+
+<!-- ══════════════════════════════════════════════════════════
+     FATIGUE ALERTS SECTION – JavaScript
+     All variables prefixed ALT_  |  All functions prefixed alerts
+     ══════════════════════════════════════════════════════════ -->
+<script>
+/* Known fatigue classification values (lower-cased for comparison) */
+const ALT_FATIGUE_CLASSES = new Set([
+  'fatigue - criteria not met',
+  'fatigue - delayed media',
+  'fatigue - drowsiness',
+  'fatigue - microsleep',
+  'fatigue - yawning',
+]);
+
+let ALT_rawData       = [];
+let ALT_weeklyData    = [];
+let ALT_alertsPerDay  = 10;
+let ALT_drillWeek     = null;  // week key currently drilled into
+let ALT_drillType     = null;  // 'total' | 'invalid' | 'valid'
+
+/* ── Upload zone wiring ── */
+const altUploadZone = document.getElementById('alt-upload-zone');
+const altFileInput  = document.getElementById('alt-file-input');
+
+altUploadZone.addEventListener('dragover',  e => { e.preventDefault(); altUploadZone.classList.add('dragover'); });
+altUploadZone.addEventListener('dragleave', ()  => altUploadZone.classList.remove('dragover'));
+altUploadZone.addEventListener('drop',      e  => {
+  e.preventDefault();
+  altUploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) alertsProcessFiles(e.dataTransfer.files);
+});
+altFileInput.addEventListener('change', () => { if (altFileInput.files.length) alertsProcessFiles(altFileInput.files); });
+
+function alertsProcessFiles(fileList) {
+  const allowed = ['.xlsx', '.xls', '.csv'];
+  const files   = Array.from(fileList);
+  const invalid = files.filter(f => {
+    const ext = f.name.includes('.') ? f.name.slice(f.name.lastIndexOf('.')).toLowerCase() : '';
+    return !allowed.includes(ext);
+  });
+  if (invalid.length) {
+    alertsShowError('Please upload only Excel (.xlsx / .xls) or CSV files. Rejected: ' + invalid.map(f => f.name).join(', '));
+    return;
+  }
+  alertsHideError();
+
+  /* Read all files in parallel; accumulate rows, then rebuild once all done */
+  const accumulated = [];
+  let pending = files.length;
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb     = XLSX.read(new Uint8Array(ev.target.result), { type: 'array', cellDates: true });
+        const ws     = wb.Sheets[wb.SheetNames[0]];
+        const parsed = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        accumulated.push(...parsed);
+      } catch (err) {
+        alertsShowError('Could not parse ' + alertsEsc(file.name) + ': ' + err.message);
+      }
+      pending--;
+      if (pending === 0) {
+        if (!accumulated.length) { alertsShowError('No data rows found in the uploaded file(s).'); return; }
+        ALT_rawData = accumulated;
+        const countEl = document.getElementById('alt-file-count');
+        countEl.textContent = files.length + ' file' + (files.length > 1 ? 's' : '') + ' loaded · ' + accumulated.length.toLocaleString() + ' rows';
+        countEl.style.display = '';
+        alertsInit();
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function alertsShowError(msg) {
+  const el = document.getElementById('alt-upload-error');
+  el.textContent = msg;
+  el.classList.remove('d-none');
+}
+function alertsHideError() {
+  document.getElementById('alt-upload-error').classList.add('d-none');
+}
+
+/* ── Initialise the alerts dashboard ── */
+function alertsInit() {
+  ALT_weeklyData = alertsBuildWeekly(ALT_rawData);
+  document.getElementById('alt-section').classList.remove('d-none');
+  alertsRenderTable();
+}
+
+/* ── Date helpers ── */
+
+/** Return { week, year } ISO-week for a Date object */
+function alertsISOWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;          // Mon=1 … Sun=7
+  d.setUTCDate(d.getUTCDate() + 4 - day); // Thursday of the same week
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return { week, year: d.getUTCFullYear() };
+}
+
+/** Return the UTC Monday of ISO week `week` in `year` */
+function alertsWeekMonday(year, week) {
+  const jan4   = new Date(Date.UTC(year, 0, 4));
+  const jan4Wd = jan4.getUTCDay() || 7;
+  const monday = new Date(jan4);
+  monday.setUTCDate(jan4.getUTCDate() - jan4Wd + 1 + (week - 1) * 7);
+  return monday;
+}
+
+/** Format a UTC date as "Jan 1" */
+function alertsFmtMD(d) {
+  const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return M[d.getUTCMonth()] + ' ' + d.getUTCDate();
+}
+
+/** Parse a cell value into a Date (handles Date objects, Excel serials, strings) */
+function alertsParseDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'number') {
+    const d = new Date(Math.round((val - 25569) * 86400000));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(String(val));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/* ── Build weekly summary ── */
+function alertsBuildWeekly(rows) {
+  const thisYear = new Date().getFullYear();
+  const byWeek   = {};
+
+  rows.forEach(row => {
+    const cls   = String(row['classification']    ?? '').trim();
+    const conf  = String(row['confirmation']      ?? '').trim();
+    const asset = String(row['vehicle']           ?? '').trim();
+    const fleet = String(row['fleet']             ?? '').trim();
+    const dt    = alertsParseDate(row['confirmation_time']);
+    if (!dt) return;
+
+    const { week, year } = alertsISOWeek(dt);
+    if (year !== thisYear) return;   // YTD: current calendar year only
+
+    const key = thisYear + '-' + String(week).padStart(2, '0');
+    if (!byWeek[key]) byWeek[key] = { key, week, rows: [] };
+    byWeek[key].rows.push({ cls, conf, asset, fleet, dt, rawRow: row });
+  });
+
+  const keys     = Object.keys(byWeek).sort();
+  if (!keys.length) return [];
+  const lastWeek = byWeek[keys[keys.length - 1]].week;
+
+  const result = [];
+  for (let w = 1; w <= lastWeek; w++) {
+    const key    = thisYear + '-' + String(w).padStart(2, '0');
+    const monday = alertsWeekMonday(thisYear, w);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    const label  = 'W' + String(w).padStart(2, '0') +
+                   ' (' + alertsFmtMD(monday) + ' – ' + alertsFmtMD(sunday) + ')';
+
+    const weekRows = byWeek[key] ? byWeek[key].rows : [];
+
+    /* All rows with a known fatigue classification */
+    const fatigueRows  = weekRows.filter(r => ALT_FATIGUE_CLASSES.has(r.cls.toLowerCase()));
+
+    /* Total Events = ALL fatigue rows (Criteria Not Met + Verified) */
+    const totalEvents  = fatigueRows;
+
+    /* Invalid = fatigue rows where Confirmation = "Criteria Not Met" */
+    const invalidRows  = fatigueRows.filter(r => r.conf.toLowerCase() === 'criteria not met');
+
+    /* Valid = Fatigue - Microsleep or Drowsiness, Verified */
+    const validRows    = fatigueRows.filter(r =>
+      (r.cls.toLowerCase() === 'fatigue - microsleep' || r.cls.toLowerCase() === 'fatigue - drowsiness') &&
+      r.conf.toLowerCase() === 'verified'
+    );
+
+    const vehicles                = new Set(fatigueRows.map(r => r.asset).filter(Boolean));
+    const partners                = new Set(fatigueRows.map(r => r.fleet).filter(Boolean));
+    const avgAlertsPerHourTotal   = alertsAvgMaxPerHour(fatigueRows, false);
+    const avgAlertsPerHourInvalid = alertsAvgMaxPerHour(fatigueRows, true);
+
+    result.push({
+      key, label, week: w,
+      vehicles: vehicles.size,
+      partners: partners.size,
+      totalEvents,
+      invalidRows,
+      validRows,
+      avgAlertsPerHourTotal,
+      avgAlertsPerHourInvalid,
+      fatigueRows,
+    });
+  }
+  return result;
+}
+
+/** Average of each vehicle's worst 60-min rolling window alert count.
+ *  When invalidOnly=true, only counts rows where confirmation = "criteria not met". */
+function alertsAvgMaxPerHour(fatigueRows, invalidOnly) {
+  const rows = invalidOnly
+    ? fatigueRows.filter(r => r.conf.toLowerCase() === 'criteria not met')
+    : fatigueRows;
+  if (!rows.length) return 0;
+  const byAsset = {};
+  rows.forEach(r => {
+    if (!r.asset) return;
+    (byAsset[r.asset] = byAsset[r.asset] || []).push(r.dt.getTime());
+  });
+  const assets = Object.keys(byAsset);
+  if (!assets.length) return 0;
+  let total = 0;
+  assets.forEach(asset => {
+    const times = byAsset[asset].slice().sort((a, b) => a - b);
+    let maxCount = 0;
+    for (let i = 0; i < times.length; i++) {
+      const windowEnd = times[i] + 3600000;
+      let count = 0;
+      for (let j = i; j < times.length && times[j] <= windowEnd; j++) count++;
+      if (count > maxCount) maxCount = count;
+    }
+    total += maxCount;
+  });
+  return Math.round((total / assets.length) * 10) / 10;
+}
+
+/** % of vehicles that exceeded `threshold` alerts on any single calendar day */
+function alertsComputeImpact(wd, threshold) {
+  if (!wd.vehicles) return 0;
+  const byAssetDay = {};
+  wd.fatigueRows.forEach(r => {
+    if (!r.asset) return;
+    const day = r.dt.toISOString().slice(0, 10);
+    const k   = r.asset + '|' + day;
+    byAssetDay[k] = (byAssetDay[k] || 0) + 1;
+  });
+  const exceeded = new Set();
+  Object.entries(byAssetDay).forEach(([k, cnt]) => {
+    if (cnt > threshold) exceeded.add(k.split('|')[0]);
+  });
+  return Math.round(exceeded.size / wd.vehicles * 100);
+}
+
+/* ── Render weekly table ── */
+function alertsRenderTable() {
+  const threshold = ALT_alertsPerDay;
+  const tbody = document.getElementById('alt-table-body');
+  tbody.innerHTML = '';
+
+  ALT_weeklyData.forEach(wd => {
+    const impact = alertsComputeImpact(wd, threshold);
+    const tr = document.createElement('tr');
+    const isActiveDrillTotal   = ALT_drillWeek === wd.key && ALT_drillType === 'total';
+    const isActiveDrillInvalid = ALT_drillWeek === wd.key && ALT_drillType === 'invalid';
+    const isActiveDrillValid   = ALT_drillWeek === wd.key && ALT_drillType === 'valid';
+
+    tr.innerHTML =
+      '<td class="text-nowrap">' + alertsEsc(wd.label) + '</td>' +
+      '<td class="text-end">' + wd.vehicles + '</td>' +
+      '<td class="text-end">' + wd.partners + '</td>' +
+      '<td class="text-end alt-clickable-cell' + (isActiveDrillTotal ? ' table-active' : '') + '" ' +
+          'data-week="' + wd.key + '" data-type="total" role="button" tabindex="0" ' +
+          'title="Click to see Total Events detail">' + wd.totalEvents.length + '</td>' +
+      '<td class="text-end alt-clickable-cell' + (isActiveDrillInvalid ? ' table-active' : '') + '" ' +
+          'data-week="' + wd.key + '" data-type="invalid" role="button" tabindex="0" ' +
+          'title="Click to see Invalid Events detail">' + wd.invalidRows.length + '</td>' +
+      '<td class="text-end alt-clickable-cell' + (isActiveDrillValid ? ' table-active' : '') + '" ' +
+          'data-week="' + wd.key + '" data-type="valid" role="button" tabindex="0" ' +
+          'title="Click to see Valid Events detail">' + wd.validRows.length + '</td>' +
+      '<td class="text-end">' + wd.avgAlertsPerHourTotal.toFixed(1) + '</td>' +
+      '<td class="text-end">' + wd.avgAlertsPerHourInvalid.toFixed(1) + '</td>' +
+      '<td class="text-end alt-apd-cell" data-week="' + wd.key + '">' + threshold + '</td>' +
+      '<td class="text-end"><span class="alt-impact-pct" data-week="' + wd.key + '">' + impact + '%</span></td>';
+
+    tbody.appendChild(tr);
+  });
+
+  /* Click / keyboard handlers for drill-down cells */
+  document.querySelectorAll('.alt-clickable-cell').forEach(cell => {
+    cell.addEventListener('click', () => alertsToggleDrill(cell.dataset.week, cell.dataset.type));
+    cell.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alertsToggleDrill(cell.dataset.week, cell.dataset.type); }
+    });
+  });
+}
+
+/* ── Drill-down toggle ── */
+function alertsToggleDrill(weekKey, type) {
+  const panel = document.getElementById('alt-drill-panel');
+
+  if (ALT_drillWeek === weekKey && ALT_drillType === type) {
+    /* collapse */
+    ALT_drillWeek = ALT_drillType = null;
+    panel.classList.add('d-none');
+    alertsRenderTable();
+    return;
+  }
+
+  ALT_drillWeek = weekKey;
+  ALT_drillType = type;
+
+  const wd   = ALT_weeklyData.find(w => w.key === weekKey);
+  if (!wd) return;
+
+  const rows      = type === 'total' ? wd.totalEvents : type === 'invalid' ? wd.invalidRows : wd.validRows;
+  const typeLabel = type === 'total' ? 'Total Events' : type === 'invalid' ? 'Invalid Events' : 'Valid Events';
+
+  document.getElementById('alt-drill-title').textContent =
+    wd.label + ' – ' + typeLabel + ' (' + rows.length + ' records)';
+
+  const drillBody = document.getElementById('alt-drill-body');
+  drillBody.innerHTML = '';
+  rows.forEach(r => {
+    const dtDisplay = r.rawRow['confirmation_time'] instanceof Date
+      ? r.rawRow['confirmation_time'].toLocaleString()
+      : alertsEsc(String(r.rawRow['confirmation_time'] ?? ''));
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + alertsEsc(String(r.rawRow['event_id'] ?? '')) + '</td>' +
+      '<td>' + alertsEsc(r.asset) + '</td>' +
+      '<td>' + alertsEsc(r.fleet) + '</td>' +
+      '<td>' + alertsEsc(r.cls)   + '</td>' +
+      '<td>' + alertsEsc(r.conf)  + '</td>' +
+      '<td class="text-nowrap">' + dtDisplay + '</td>';
+    drillBody.appendChild(tr);
+  });
+
+  panel.classList.remove('d-none');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  alertsRenderTable();
+}
+
+/** HTML-escape a string */
+function alertsEsc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ── Alerts-per-day threshold input ── */
+document.getElementById('alt-alerts-per-day').addEventListener('input', function () {
+  const val = parseInt(this.value, 10);
+  if (isNaN(val) || val < 1) return;
+  ALT_alertsPerDay = val;
+  /* Recalculate impact cells in place without full re-render */
+  ALT_weeklyData.forEach(wd => {
+    const span = document.querySelector('.alt-impact-pct[data-week="' + wd.key + '"]');
+    if (span) span.textContent = alertsComputeImpact(wd, ALT_alertsPerDay) + '%';
+  });
+  /* Also update the Daily Alert Threshold column cells */
+  document.querySelectorAll('.alt-apd-cell').forEach(td => {
+    td.textContent = ALT_alertsPerDay;
+  });
+});
+
+/* ── Close drill-down panel ── */
+document.getElementById('alt-drill-close').addEventListener('click', () => {
+  ALT_drillWeek = ALT_drillType = null;
+  document.getElementById('alt-drill-panel').classList.add('d-none');
+  alertsRenderTable();
 });
 </script>
 </body>
