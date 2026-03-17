@@ -1812,7 +1812,7 @@ function alertsRenderTable() {
           'data-week="' + wd.key + '" data-type="valid" role="button" tabindex="0" ' +
           'title="Click to see Valid Events detail">' + wd.validRows.length + '</td>' +
       '<td class="text-end">' + wd.alertsPerHour + '</td>' +
-      '<td class="text-end">' + threshold + '</td>' +
+      '<td class="text-end alt-apd-cell" data-week="' + wd.key + '">' + threshold + '</td>' +
       '<td class="text-end"><span class="alt-impact-pct" data-week="' + wd.key + '">' + impact + '%</span></td>';
 
     tbody.appendChild(tr);
@@ -1892,9 +1892,8 @@ document.getElementById('alt-alerts-per-day').addEventListener('input', function
     if (span) span.textContent = alertsComputeImpact(wd, ALT_alertsPerDay) + '%';
   });
   /* Also update the Alerts per day column cells */
-  document.querySelectorAll('#alt-table-body tr').forEach((tr, i) => {
-    const apd = tr.cells[8];
-    if (apd) apd.textContent = ALT_alertsPerDay;
+  document.querySelectorAll('.alt-apd-cell').forEach(td => {
+    td.textContent = ALT_alertsPerDay;
   });
 });
 
