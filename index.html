@@ -333,7 +333,11 @@
     </div>
 
     <!-- ══ SCAC-Level Campaign Status Progress ══ -->
-    <h5 class="section-title mb-3 mt-4"><i class="bi bi-people me-2"></i>SCAC-Level Campaign Status Progress</h5>
+    <h5 class="section-title mb-3 mt-4 d-flex align-items-center flex-wrap gap-2">
+      <span><i class="bi bi-people me-2"></i>SCAC-Level Campaign Status Progress</span>
+      <span class="badge rounded-pill text-bg-secondary fw-normal" id="scac-kpi-filtered" title="Vehicles in current filtered view" aria-label="Number of vehicles in current filtered view">0 Filtered</span>
+      <span class="badge rounded-pill fw-normal" style="background:#003087;color:#fff" id="scac-kpi-installed" title="Total vehicles with a Campaign Status (ignores Campaign Status filter)" aria-label="Total number of vehicles with Campaign Status installed">0 Total Installed</span>
+    </h5>
     <div class="row g-3 mb-3">
       <div class="col-12">
         <div class="card chart-card shadow-sm p-3">
@@ -948,8 +952,19 @@ function updateStatusFilterBtn() {
 function populateStatusFilter(values) {
   const menu = document.getElementById('filter-status-menu');
   if (!menu) return;
-  // Re-check any previously selected values that still exist
-  menu.innerHTML = values.map((v, i) => {
+
+  // Build "Select All" item
+  const allChecked = values.length > 0 && values.every(v => statusFilterSet.has(v));
+  const someChecked = !allChecked && values.some(v => statusFilterSet.has(v));
+
+  const selectAllHtml = `<li>
+    <label class="dropdown-item d-flex align-items-center gap-2 py-1 border-bottom mb-1" style="white-space:normal;cursor:pointer;font-weight:600">
+      <input type="checkbox" class="form-check-input flex-shrink-0 mt-0" id="status-cb-all" aria-label="Select all campaign statuses">
+      <span class="small">Select All</span>
+    </label>
+  </li>`;
+
+  menu.innerHTML = selectAllHtml + values.map((v, i) => {
     const checked = statusFilterSet.has(v) ? ' checked' : '';
     const cbId    = 'status-cb-' + i;
     return `<li>
@@ -961,13 +976,40 @@ function populateStatusFilter(values) {
     </li>`;
   }).join('');
 
-  // Wire up checkbox event handlers
+  // Set indeterminate state on Select All checkbox
+  const selectAllCb = document.getElementById('status-cb-all');
+  if (selectAllCb) {
+    selectAllCb.checked = allChecked;
+    selectAllCb.indeterminate = someChecked;
+
+    selectAllCb.addEventListener('change', () => {
+      const individualCbs = menu.querySelectorAll('.status-filter-cb');
+      if (selectAllCb.checked) {
+        values.forEach(v => statusFilterSet.add(v));
+        individualCbs.forEach(cb => { cb.checked = true; });
+      } else {
+        statusFilterSet.clear();
+        individualCbs.forEach(cb => { cb.checked = false; });
+      }
+      updateStatusFilterBtn();
+      applyFilters();
+    });
+  }
+
+  // Wire up individual checkbox event handlers
   menu.querySelectorAll('.status-filter-cb').forEach(cb => {
     cb.addEventListener('change', () => {
       if (cb.checked) {
         statusFilterSet.add(cb.value);
       } else {
         statusFilterSet.delete(cb.value);
+      }
+      // Update Select All checkbox state
+      const allNowChecked = values.every(v => statusFilterSet.has(v));
+      const someNowChecked = !allNowChecked && values.some(v => statusFilterSet.has(v));
+      if (selectAllCb) {
+        selectAllCb.checked = allNowChecked;
+        selectAllCb.indeterminate = someNowChecked;
       }
       updateStatusFilterBtn();
       applyFilters();
@@ -1597,6 +1639,15 @@ function renderScacStatusSection() {
   const rowsWithStatus = scacFiltered.filter(r => String(r[COL.status] ?? '').trim() !== '');
   const scacSet = new Set(rowsWithStatus.map(r => String(r[COL.scac] ?? '').trim()).filter(Boolean));
   const scacs = Array.from(scacSet).sort();
+
+  // Update KPI badges
+  const filteredWithStatus = filtered.filter(r => String(r[COL.status] ?? '').trim() !== '');
+  const kpiFiltered = document.getElementById('scac-kpi-filtered');
+  if (kpiFiltered) kpiFiltered.textContent = filteredWithStatus.length.toLocaleString() + ' Filtered';
+
+  const installedCount = scacFiltered.filter(r => String(r[COL.status] ?? '').trim() !== '').length;
+  const kpiInstalled = document.getElementById('scac-kpi-installed');
+  if (kpiInstalled) kpiInstalled.textContent = installedCount.toLocaleString() + ' Total Installed';
 
   const noData = document.getElementById('scac-status-no-data');
   const theadEl = document.getElementById('scac-status-thead');
