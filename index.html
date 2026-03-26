@@ -1627,6 +1627,11 @@ function renderScacStatusSection() {
     statusDefs.push({ label: 'Other', color: '#adb5bd', resolved: false });
   }
 
+  // When statuses are selected in the filter, only show those colors in the chart
+  const chartStatusDefs = statusFilterSet.size > 0
+    ? statusDefs.filter(d => statusFilterSet.has(d.label))
+    : statusDefs;
+
   // Build per-SCAC counts: { scacName: { statusLabel: count, ... } }
   const scacCounts = {};
   scacs.forEach(s => {
@@ -1645,6 +1650,11 @@ function renderScacStatusSection() {
     }
   });
 
+  // When a status filter is active, only show SCACs that have ≥1 vehicle in a selected status
+  const visibleScacs = statusFilterSet.size > 0
+    ? scacs.filter(s => chartStatusDefs.some(d => (scacCounts[s][d.label] || 0) > 0))
+    : scacs;
+
   // ── 1. Stacked Bar Chart ──────────────────────────────────────────
   const canvas = document.getElementById('chart-scac-status');
   if (chartScacStatus) { chartScacStatus.destroy(); chartScacStatus = null; }
@@ -1657,21 +1667,16 @@ function renderScacStatusSection() {
     if (scacTotals[s] !== undefined) scacTotals[s]++;
   });
 
-  // When statuses are selected in the filter, only show those colors in the chart
-  const chartStatusDefs = statusFilterSet.size > 0
-    ? statusDefs.filter(d => statusFilterSet.has(d.label))
-    : statusDefs;
-
   const datasets = chartStatusDefs.map(def => ({
     label: def.label,
-    data: scacs.map(s => scacCounts[s][def.label] || 0),
+    data: visibleScacs.map(s => scacCounts[s][def.label] || 0),
     backgroundColor: def.color,
   }));
 
   // Remainder dataset: fills bar silhouette to total installed count
   datasets.push({
     label: '_remainder_',
-    data: scacs.map(s => {
+    data: visibleScacs.map(s => {
       const sel = chartStatusDefs.reduce((acc, d) => acc + (scacCounts[s][d.label] || 0), 0);
       return Math.max(0, (scacTotals[s] || 0) - sel);
     }),
@@ -1696,7 +1701,7 @@ function renderScacStatusSection() {
         meta.data.forEach((bar, i) => {
           const val = ds.data[i];
           if (!val) return;
-          const total = scacTotals[scacs[i]] || 0;
+          const total = scacTotals[visibleScacs[i]] || 0;
           if (!total) return;
           const pct = Math.round(val / total * 100);
           const segWidth = Math.abs(bar.x - bar.base);
@@ -1710,7 +1715,7 @@ function renderScacStatusSection() {
 
   chartScacStatus = new Chart(canvas, {
     type: 'bar',
-    data: { labels: scacs, datasets },
+    data: { labels: visibleScacs, datasets },
     options: {
       indexAxis: 'y',
       plugins: {
@@ -1729,7 +1734,7 @@ function renderScacStatusSection() {
             label(ctx) {
               const val = ctx.parsed.x;
               if (!val) return null;
-              const total = scacTotals[scacs[ctx.dataIndex]] || 0;
+              const total = scacTotals[visibleScacs[ctx.dataIndex]] || 0;
               const pct = total ? Math.round(val / total * 100) : 0;
               return `${ctx.dataset.label}: ${val} (${pct}% of installed)`;
             },
@@ -1790,7 +1795,7 @@ function renderScacStatusSection() {
   const resolvedDefs = statusDefs.filter(d => d.resolved);
   const openDefs     = statusDefs.filter(d => !d.resolved);
 
-  const rows = scacs.map(scacName => {
+  const rows = visibleScacs.map(scacName => {
     const counts = scacCounts[scacName];
     const total    = statusDefs.reduce((s, d) => s + (counts[d.label] || 0), 0);
     const resolved = resolvedDefs.reduce((s, d) => s + (counts[d.label] || 0), 0);
