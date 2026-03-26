@@ -1263,6 +1263,8 @@ const SCAC_STATUS_DEFS = [
   { label: 'Replaced',                                     color: '#20c997', resolved: true  },
   { label: 'END OF LIFE',                                  color: '#6c757d', resolved: true  },
 ];
+const SCAC_REMAINDER_COLOR   = 'rgba(200,200,200,0.2)';
+const SCAC_MIN_LABEL_WIDTH   = 26; // px – minimum bar segment width to draw a percentage label
 
 function getOrCreate(id, type, data, options) {
   const canvas = document.getElementById(id);
@@ -1647,11 +1649,64 @@ function renderScacStatusSection() {
   const canvas = document.getElementById('chart-scac-status');
   if (chartScacStatus) { chartScacStatus.destroy(); chartScacStatus = null; }
 
-  const datasets = statusDefs.map(def => ({
+  // Per-SCAC total installed (base for silhouette + percentage calculation)
+  const scacTotals = {};
+  scacs.forEach(s => { scacTotals[s] = 0; });
+  rowsWithStatus.forEach(r => {
+    const s = String(r[COL.scac] ?? '').trim();
+    if (scacTotals[s] !== undefined) scacTotals[s]++;
+  });
+
+  // When statuses are selected in the filter, only show those colors in the chart
+  const chartStatusDefs = statusFilterSet.size > 0
+    ? statusDefs.filter(d => statusFilterSet.has(d.label))
+    : statusDefs;
+
+  const datasets = chartStatusDefs.map(def => ({
     label: def.label,
     data: scacs.map(s => scacCounts[s][def.label] || 0),
     backgroundColor: def.color,
   }));
+
+  // Remainder dataset: fills bar silhouette to total installed count
+  datasets.push({
+    label: '_remainder_',
+    data: scacs.map(s => {
+      const sel = chartStatusDefs.reduce((acc, d) => acc + (scacCounts[s][d.label] || 0), 0);
+      return Math.max(0, (scacTotals[s] || 0) - sel);
+    }),
+    backgroundColor: SCAC_REMAINDER_COLOR,
+    borderWidth: 0,
+  });
+
+  // Inline plugin: draw percentage labels inside each colored segment
+  const inlineLabelPlugin = {
+    id: 'scacBarPctLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      ctx.save();
+      ctx.font = 'bold 10px Segoe UI, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      data.datasets.forEach((ds, di) => {
+        if (ds.label === '_remainder_') return;
+        const meta = chart.getDatasetMeta(di);
+        if (meta.hidden) return;
+        meta.data.forEach((bar, i) => {
+          const val = ds.data[i];
+          if (!val) return;
+          const total = scacTotals[scacs[i]] || 0;
+          if (!total) return;
+          const pct = Math.round(val / total * 100);
+          const segWidth = Math.abs(bar.x - bar.base);
+          if (segWidth < SCAC_MIN_LABEL_WIDTH) return; // skip if too narrow to fit text
+          ctx.fillText(pct + '%', (bar.x + bar.base) / 2, bar.y);
+        });
+      });
+      ctx.restore();
+    },
+  };
 
   chartScacStatus = new Chart(canvas, {
     type: 'bar',
@@ -1659,7 +1714,27 @@ function renderScacStatusSection() {
     options: {
       indexAxis: 'y',
       plugins: {
-        legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            boxWidth: 12,
+            font: { size: 11 },
+            filter: item => item.text !== '_remainder_',
+          },
+        },
+        tooltip: {
+          filter: item => item.dataset.label !== '_remainder_',
+          callbacks: {
+            label(ctx) {
+              const val = ctx.parsed.x;
+              if (!val) return null;
+              const total = scacTotals[scacs[ctx.dataIndex]] || 0;
+              const pct = total ? Math.round(val / total * 100) : 0;
+              return `${ctx.dataset.label}: ${val} (${pct}% of installed)`;
+            },
+          },
+        },
       },
       scales: {
         x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
@@ -1667,6 +1742,7 @@ function renderScacStatusSection() {
       },
       maintainAspectRatio: true,
     },
+    plugins: [inlineLabelPlugin],
   });
 
   // ── 2. Detail Table ──────────────────────────────────────────────
