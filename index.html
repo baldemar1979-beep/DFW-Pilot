@@ -112,6 +112,24 @@
     .cell-missing  { background: #fff3cd !important; }
     .cell-critical { background: #f8d7da !important; }
 
+    /* SCAC Status table */
+    #scac-status-table { font-size: .78rem; white-space: nowrap; }
+    #scac-status-table thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: var(--brand-blue); color: #fff;
+      font-weight: 600; padding: 8px 10px;
+      cursor: pointer; user-select: none;
+    }
+    #scac-status-table thead th:hover { background: #004aab; }
+    #scac-status-table thead th .sort-icon { font-size: .7rem; margin-left: 3px; opacity: .7; }
+    #scac-status-table thead th.active-sort .sort-icon { opacity: 1; }
+    #scac-status-table tbody tr:hover { background: #eef3ff; cursor: pointer; }
+    #scac-status-table tbody tr.table-primary { background: #cfe2ff !important; }
+
+    /* Multi-select Campaign Status dropdown */
+    #filter-status-btn { min-width:160px; text-align:left; font-size:.875rem; padding:4px 28px 4px 8px; }
+    #filter-status-menu { max-height:300px; overflow-y:auto; min-width:270px; }
+
     /* KPI column highlight */
     #install-table thead th.col-kpi-highlight { background: rgba(245,166,35,0.35) !important; outline: 2px solid var(--brand-gold); outline-offset: -2px; }
     #install-table tbody td.col-kpi-cell-hl { box-shadow: inset 0 0 0 2px var(--brand-gold) !important; }
@@ -213,7 +231,16 @@
         </div>
         <div class="col-12 col-md-auto">
           <label class="form-label fw-semibold small mb-1">Campaign Status</label>
-          <select id="filter-status" class="form-select form-select-sm" style="min-width:160px"></select>
+          <div class="dropdown" id="filter-status-container">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                    id="filter-status-btn"
+                    data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
+                    aria-expanded="false">
+              All
+            </button>
+            <ul class="dropdown-menu" id="filter-status-menu"></ul>
+          </div>
         </div>
         <div class="col-12 col-md-auto">
           <label class="form-label fw-semibold small mb-1">Domicile</label>
@@ -301,6 +328,34 @@
         <div class="card kpi-card shadow-sm p-3 text-white" id="kpi-median-d810-card" style="background:#17a2b8">
           <div class="kpi-value" id="kpi-median-d810">—</div>
           <div class="kpi-label">Median D810 Install Time (hrs) - Start/End Timestamp</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCAC-Level Campaign Status Progress ══ -->
+    <h5 class="section-title mb-3 mt-4"><i class="bi bi-people me-2"></i>SCAC-Level Campaign Status Progress</h5>
+    <div class="row g-3 mb-3">
+      <div class="col-12">
+        <div class="card chart-card shadow-sm p-3">
+          <h6 class="section-title mb-3"><i class="bi bi-bar-chart-steps me-1"></i>Campaign Status by SCAC</h6>
+          <canvas id="chart-scac-status" style="max-height:400px"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
+      <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 flex-wrap" style="border-radius:12px 12px 0 0">
+        <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>SCAC Progress Detail</h6>
+        <button id="btn-reset-scac-drill" class="btn btn-sm btn-outline-secondary ms-auto d-none">
+          <i class="bi bi-x-circle me-1"></i>Reset SCAC Drill-down
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0" id="scac-status-table">
+            <thead id="scac-status-thead"><tr></tr></thead>
+            <tbody id="scac-status-tbody"></tbody>
+          </table>
+          <p id="scac-status-no-data" class="text-center text-muted py-4" style="display:none">No records match your filters.</p>
         </div>
       </div>
     </div>
@@ -638,12 +693,17 @@ const ALL_COLS = Object.values(COL);
    ============================================================ */
 let rawData   = [];   // all rows parsed from Excel
 let filtered  = [];   // rows after applying filters
+let scacFiltered = []; // rows after applying filters except Campaign Status filter
+let statusFilterSet = new Set(); // selected Campaign Status values; empty = "All"
 let currentFilename  = '';
 let currentFileSize  = 0;
 let currentUploadTime = null;
 let activeCompletionCols = []; // subset of COMPLETION_COLS present in the loaded file
 
-let chartScac, chartProgram, chartTrend, chartBodyType;
+let chartScac, chartProgram, chartTrend, chartBodyType, chartScacStatus;
+
+let scacDrillActive = null; // currently drilled SCAC name
+let scacResetBtnListenerAttached = false; // track reset button listener
 
 let activeKpiHighlight = []; // column names to highlight in install table
 let sortState   = { col: null, dir: 1 };
@@ -831,6 +891,9 @@ function initDashboard() {
   sortState = { col: null, dir: 1 };
   colFilters = {};
   tableOnlyFilter = null;
+  scacDrillActive = null;
+  renderScacStatusSection._sortCol = '__scac__';
+  renderScacStatusSection._sortDir = 1;
 
   // Determine which completion columns are present in this file
   activeCompletionCols = COMPLETION_COLS.filter(col =>
@@ -848,9 +911,11 @@ function initDashboard() {
    FILTERS
    ============================================================ */
 function resetFilters() {
-  ['filter-scac','filter-program','filter-status','filter-domicile'].forEach(id => {
+  ['filter-scac','filter-program','filter-domicile'].forEach(id => {
     document.getElementById(id).value = 'All';
   });
+  statusFilterSet.clear();
+  updateStatusFilterBtn();
   document.getElementById('filter-date-from').value = '';
   document.getElementById('filter-date-to').value   = '';
   document.getElementById('filter-search').value    = '';
@@ -864,8 +929,52 @@ function uniqueValues(col) {
 function populateFilters() {
   fillSelect('filter-scac',     uniqueValues(COL.scac));
   fillSelect('filter-program',  uniqueValues(COL.program));
-  fillSelect('filter-status',   uniqueValues(COL.status));
+  populateStatusFilter(uniqueValues(COL.status).filter(v => v !== 'All'));
   fillSelect('filter-domicile', uniqueValues(COL.domicile));
+}
+
+function updateStatusFilterBtn() {
+  const btn = document.getElementById('filter-status-btn');
+  if (!btn) return;
+  if (statusFilterSet.size === 0) {
+    btn.textContent = 'All';
+  } else if (statusFilterSet.size === 1) {
+    btn.textContent = Array.from(statusFilterSet)[0];
+  } else {
+    btn.textContent = statusFilterSet.size + ' selected';
+  }
+}
+
+function populateStatusFilter(values) {
+  const menu = document.getElementById('filter-status-menu');
+  if (!menu) return;
+  // Re-check any previously selected values that still exist
+  menu.innerHTML = values.map((v, i) => {
+    const checked = statusFilterSet.has(v) ? ' checked' : '';
+    const cbId    = 'status-cb-' + i;
+    return `<li>
+      <label class="dropdown-item d-flex align-items-center gap-2 py-1" style="white-space:normal;cursor:pointer">
+        <input type="checkbox" class="form-check-input status-filter-cb flex-shrink-0 mt-0"
+               value="${v.replace(/"/g, '&quot;')}" id="${cbId}"${checked}>
+        <span class="small">${v}</span>
+      </label>
+    </li>`;
+  }).join('');
+
+  // Wire up checkbox event handlers
+  menu.querySelectorAll('.status-filter-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        statusFilterSet.add(cb.value);
+      } else {
+        statusFilterSet.delete(cb.value);
+      }
+      updateStatusFilterBtn();
+      applyFilters();
+    });
+  });
+
+  updateStatusFilterBtn();
 }
 
 function fillSelect(id, values) {
@@ -875,7 +984,7 @@ function fillSelect(id, values) {
   if (values.includes(prev)) sel.value = prev;
 }
 
-['filter-scac','filter-program','filter-status','filter-domicile',
+['filter-scac','filter-program','filter-domicile',
  'filter-date-from','filter-date-to','filter-search'].forEach(id => {
   document.getElementById(id).addEventListener('change', applyFilters);
   document.getElementById(id).addEventListener('input',  applyFilters);
@@ -975,7 +1084,6 @@ function scrollToVehicleRecords() {
 function applyFilters() {
   const scac     = document.getElementById('filter-scac').value;
   const program  = document.getElementById('filter-program').value;
-  const status   = document.getElementById('filter-status').value;
   const domicile = document.getElementById('filter-domicile').value;
   const dateFrom = document.getElementById('filter-date-from').value;
   const dateTo   = document.getElementById('filter-date-to').value;
@@ -984,7 +1092,32 @@ function applyFilters() {
   filtered = rawData.filter(row => {
     if (scac     !== 'All' && String(row[COL.scac]     ?? '').trim() !== scac)     return false;
     if (program  !== 'All' && String(row[COL.program]  ?? '').trim() !== program)  return false;
-    if (status   !== 'All' && String(row[COL.status]   ?? '').trim() !== status)   return false;
+    if (statusFilterSet.size > 0 && !statusFilterSet.has(String(row[COL.status] ?? '').trim())) return false;
+    if (domicile !== 'All' && String(row[COL.domicile] ?? '').trim() !== domicile) return false;
+
+    if (dateFrom || dateTo) {
+      const d = parseDate(row[COL.scheduledDate]);
+      if (d) {
+        if (dateFrom && d < new Date(dateFrom)) return false;
+        if (dateTo   && d > new Date(dateTo + 'T23:59:59')) return false;
+      }
+    }
+
+    if (search) {
+      const haystack = [
+        row[COL.equipmentId], row[COL.vin], row[COL.licensePlate],
+        row[COL.scac], row[COL.domicile]
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+
+    return true;
+  });
+
+  // scacFiltered: same as filtered but ignoring Campaign Status so all statuses show per SCAC
+  scacFiltered = rawData.filter(row => {
+    if (scac     !== 'All' && String(row[COL.scac]     ?? '').trim() !== scac)     return false;
+    if (program  !== 'All' && String(row[COL.program]  ?? '').trim() !== program)  return false;
     if (domicile !== 'All' && String(row[COL.domicile] ?? '').trim() !== domicile) return false;
 
     if (dateFrom || dateTo) {
@@ -1010,6 +1143,7 @@ function applyFilters() {
   renderCharts();
   renderTab2KPIs();
   renderInstallTable();
+  renderScacStatusSection();
 }
 
 /* ============================================================
@@ -1118,6 +1252,19 @@ const PALETTE = [
   '#6f42c1','#fd7e14','#20c997','#e83e8c','#adb5bd',
   '#0d6efd','#ffc107','#6610f2','#d63384','#0dcaf0',
 ];
+
+const SCAC_STATUS_DEFS = [
+  { label: 'Installed - DMS Camera Obstruction',           color: '#dc3545', resolved: false },
+  { label: 'Installed - DMS Camera Obstruction (carrier)', color: '#fd7e14', resolved: false },
+  { label: 'Installed - Waiting on an Alert',              color: '#ffc107', resolved: false },
+  { label: 'Installed - Needs Engineering Review',         color: '#f5a623', resolved: false },
+  { label: 'Installed - Needs Technician Review',          color: '#e83e8c', resolved: false },
+  { label: 'Removed',                                      color: '#198754', resolved: true  },
+  { label: 'Replaced',                                     color: '#20c997', resolved: true  },
+  { label: 'END OF LIFE',                                  color: '#6c757d', resolved: true  },
+];
+const SCAC_REMAINDER_COLOR   = 'rgba(200,200,200,0.2)';
+const SCAC_MIN_LABEL_WIDTH   = 26; // px – minimum bar segment width to draw a percentage label
 
 function getOrCreate(id, type, data, options) {
   const canvas = document.getElementById(id);
@@ -1440,6 +1587,289 @@ function renderTab2KPIs() {
 
 function renderTab2Charts() {
   // Section 4 (Installation & Equipment Analysis) removed; no charts to render.
+}
+
+/* ============================================================
+   SCAC-LEVEL CAMPAIGN STATUS PROGRESS
+   ============================================================ */
+function renderScacStatusSection() {
+  // Only include rows that have a Campaign Status value (installed vehicles, not just scheduled)
+  const rowsWithStatus = scacFiltered.filter(r => String(r[COL.status] ?? '').trim() !== '');
+  const scacSet = new Set(rowsWithStatus.map(r => String(r[COL.scac] ?? '').trim()).filter(Boolean));
+  const scacs = Array.from(scacSet).sort();
+
+  const noData = document.getElementById('scac-status-no-data');
+  const theadEl = document.getElementById('scac-status-thead');
+  const tbodyEl = document.getElementById('scac-status-tbody');
+
+  if (!scacs.length) {
+    if (noData) noData.style.display = '';
+    if (theadEl) theadEl.innerHTML = '<tr></tr>';
+    if (tbodyEl) tbodyEl.innerHTML = '';
+    // Destroy chart if it exists
+    if (chartScacStatus) { chartScacStatus.destroy(); chartScacStatus = null; }
+    return;
+  }
+  if (noData) noData.style.display = 'none';
+
+  // Collect all known status labels from defs + any "Other" found in data
+  const knownLabels = SCAC_STATUS_DEFS.map(d => d.label);
+  const otherStatuses = new Set();
+  rowsWithStatus.forEach(r => {
+    const s = String(r[COL.status] ?? '').trim();
+    if (s && !knownLabels.includes(s)) otherStatuses.add(s);
+  });
+  const hasOther = otherStatuses.size > 0;
+
+  // Build status definitions to use (SCAC_STATUS_DEFS + optional "Other")
+  const statusDefs = [...SCAC_STATUS_DEFS];
+  if (hasOther) {
+    statusDefs.push({ label: 'Other', color: '#adb5bd', resolved: false });
+  }
+
+  // When statuses are selected in the filter, only show those colors in the chart
+  const chartStatusDefs = statusFilterSet.size > 0
+    ? statusDefs.filter(d => statusFilterSet.has(d.label))
+    : statusDefs;
+
+  // Build per-SCAC counts: { scacName: { statusLabel: count, ... } }
+  const scacCounts = {};
+  scacs.forEach(s => {
+    scacCounts[s] = {};
+    statusDefs.forEach(d => { scacCounts[s][d.label] = 0; });
+  });
+  rowsWithStatus.forEach(r => {
+    const s = String(r[COL.scac] ?? '').trim();
+    if (!s) return;
+    const st = String(r[COL.status] ?? '').trim();
+    if (!scacCounts[s]) return;
+    if (knownLabels.includes(st)) {
+      scacCounts[s][st]++;
+    } else if (hasOther) {
+      scacCounts[s]['Other']++;
+    }
+  });
+
+  // When a status filter is active, only show SCACs that have ≥1 vehicle in a selected status
+  const visibleScacs = statusFilterSet.size > 0
+    ? scacs.filter(s => chartStatusDefs.some(d => (scacCounts[s][d.label] || 0) > 0))
+    : scacs;
+
+  // ── 1. Stacked Bar Chart ──────────────────────────────────────────
+  const canvas = document.getElementById('chart-scac-status');
+  if (chartScacStatus) { chartScacStatus.destroy(); chartScacStatus = null; }
+
+  // Per-SCAC total installed (base for silhouette + percentage calculation)
+  const scacTotals = {};
+  scacs.forEach(s => { scacTotals[s] = 0; });
+  rowsWithStatus.forEach(r => {
+    const s = String(r[COL.scac] ?? '').trim();
+    if (scacTotals[s] !== undefined) scacTotals[s]++;
+  });
+
+  const datasets = chartStatusDefs.map(def => ({
+    label: def.label,
+    data: visibleScacs.map(s => scacCounts[s][def.label] || 0),
+    backgroundColor: def.color,
+  }));
+
+  // Remainder dataset: fills bar silhouette to total installed count
+  datasets.push({
+    label: '_remainder_',
+    data: visibleScacs.map(s => {
+      const sel = chartStatusDefs.reduce((acc, d) => acc + (scacCounts[s][d.label] || 0), 0);
+      return Math.max(0, (scacTotals[s] || 0) - sel);
+    }),
+    backgroundColor: SCAC_REMAINDER_COLOR,
+    borderWidth: 0,
+  });
+
+  // Inline plugin: draw percentage labels inside each colored segment
+  const inlineLabelPlugin = {
+    id: 'scacBarPctLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      ctx.save();
+      ctx.font = 'bold 10px Segoe UI, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      data.datasets.forEach((ds, di) => {
+        if (ds.label === '_remainder_') return;
+        const meta = chart.getDatasetMeta(di);
+        if (meta.hidden) return;
+        meta.data.forEach((bar, i) => {
+          const val = ds.data[i];
+          if (!val) return;
+          const total = scacTotals[visibleScacs[i]] || 0;
+          if (!total) return;
+          const pct = Math.round(val / total * 100);
+          const segWidth = Math.abs(bar.x - bar.base);
+          if (segWidth < SCAC_MIN_LABEL_WIDTH) return; // skip if too narrow to fit text
+          ctx.fillText(pct + '%', (bar.x + bar.base) / 2, bar.y);
+        });
+      });
+      ctx.restore();
+    },
+  };
+
+  chartScacStatus = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: visibleScacs, datasets },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            boxWidth: 12,
+            font: { size: 11 },
+            filter: item => item.text !== '_remainder_',
+          },
+        },
+        tooltip: {
+          filter: item => item.dataset.label !== '_remainder_',
+          callbacks: {
+            label(ctx) {
+              const val = ctx.parsed.x;
+              if (!val) return null;
+              const total = scacTotals[visibleScacs[ctx.dataIndex]] || 0;
+              const pct = total ? Math.round(val / total * 100) : 0;
+              return `${ctx.dataset.label}: ${val} (${pct}% of installed)`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
+        y: { stacked: true },
+      },
+      maintainAspectRatio: true,
+    },
+    plugins: [inlineLabelPlugin],
+  });
+
+  // ── 2. Detail Table ──────────────────────────────────────────────
+  // Sort state for the SCAC table
+  if (!renderScacStatusSection._sortCol) {
+    renderScacStatusSection._sortCol = '__scac__';
+    renderScacStatusSection._sortDir = 1;
+  }
+
+  // Build header
+  const sortIcon = (col) => {
+    if (renderScacStatusSection._sortCol !== col) return '<span class="sort-icon">⇅</span>';
+    return `<span class="sort-icon">${renderScacStatusSection._sortDir > 0 ? '▲' : '▼'}</span>`;
+  };
+  const thClass = (col) => renderScacStatusSection._sortCol === col ? ' active-sort' : '';
+
+  const headerCols = [
+    { key: '__scac__',     label: 'SCAC' },
+    { key: '__total__',    label: 'Total' },
+    ...statusDefs.map(d => ({ key: d.label, label: d.label })),
+    { key: '__resolved__', label: 'Resolved' },
+    { key: '__open__',     label: 'Open' },
+    { key: '__pct__',      label: '% Resolved' },
+  ];
+
+  theadEl.innerHTML = '<tr>' + headerCols.map(c =>
+    `<th data-scac-sort="${c.key}" class="${thClass(c.key)}" title="${c.label}">${c.label}${sortIcon(c.key)}</th>`
+  ).join('') + '</tr>';
+
+  // Wire up sort click handlers
+  theadEl.querySelectorAll('th[data-scac-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.scacSort;
+      if (renderScacStatusSection._sortCol === col) {
+        renderScacStatusSection._sortDir *= -1;
+      } else {
+        renderScacStatusSection._sortCol = col;
+        renderScacStatusSection._sortDir = 1;
+      }
+      renderScacStatusSection();
+    });
+  });
+
+  // Build row data
+  const resolvedDefs = statusDefs.filter(d => d.resolved);
+  const openDefs     = statusDefs.filter(d => !d.resolved);
+
+  const rows = visibleScacs.map(scacName => {
+    const counts = scacCounts[scacName];
+    const total    = statusDefs.reduce((s, d) => s + (counts[d.label] || 0), 0);
+    const resolved = resolvedDefs.reduce((s, d) => s + (counts[d.label] || 0), 0);
+    const open     = openDefs.reduce((s, d) => s + (counts[d.label] || 0), 0);
+    const pct      = total > 0 ? (resolved / total * 100) : 0;
+    return { scacName, total, resolved, open, pct, counts };
+  });
+
+  // Sort
+  rows.sort((a, b) => {
+    const col = renderScacStatusSection._sortCol;
+    const dir = renderScacStatusSection._sortDir;
+    let av, bv;
+    if (col === '__scac__')     { av = a.scacName; bv = b.scacName; }
+    else if (col === '__total__')    { av = a.total;   bv = b.total; }
+    else if (col === '__resolved__') { av = a.resolved; bv = b.resolved; }
+    else if (col === '__open__')     { av = a.open;    bv = b.open; }
+    else if (col === '__pct__')      { av = a.pct;     bv = b.pct; }
+    else { av = a.counts[col] || 0; bv = b.counts[col] || 0; }
+    if (typeof av === 'string') return dir * av.localeCompare(bv);
+    return dir * (av - bv);
+  });
+
+  // Render rows
+  tbodyEl.innerHTML = rows.map(row => {
+    const isActive = row.scacName === scacDrillActive;
+    const pctRounded = row.pct.toFixed(1);
+    const progressBar = `<div class="progress" style="height:8px;min-width:60px">
+      <div class="progress-bar bg-success" role="progressbar" style="width:${pctRounded}%" aria-valuenow="${pctRounded}" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <small>${pctRounded}%</small>`;
+    return `<tr data-scac="${row.scacName.replace(/"/g,'&quot;')}" class="${isActive ? 'table-primary' : ''}">
+      <td><strong>${row.scacName}</strong></td>
+      <td class="text-end">${row.total}</td>
+      ${statusDefs.map(d => `<td class="text-end">${row.counts[d.label] || 0}</td>`).join('')}
+      <td class="text-end">${row.resolved}</td>
+      <td class="text-end">${row.open}</td>
+      <td>${progressBar}</td>
+    </tr>`;
+  }).join('');
+
+  // Wire up row click handlers for drill-down
+  tbodyEl.querySelectorAll('tr[data-scac]').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const scacName = tr.dataset.scac;
+      if (scacDrillActive === scacName) {
+        // Toggle off
+        scacDrillActive = null;
+        tableOnlyFilter = null;
+        document.getElementById('btn-reset-scac-drill').classList.add('d-none');
+      } else {
+        scacDrillActive = scacName;
+        tableOnlyFilter = r => String(r[COL.scac] ?? '').trim() === scacName;
+        document.getElementById('btn-reset-scac-drill').classList.remove('d-none');
+      }
+      renderInstallTableBody();
+      if (scacDrillActive) scrollToVehicleRecords();
+      // Re-render table to update highlight
+      renderScacStatusSection();
+    });
+  });
+
+  // Wire up reset button (only attach listener once)
+  const resetBtn = document.getElementById('btn-reset-scac-drill');
+  if (resetBtn && !scacResetBtnListenerAttached) {
+    scacResetBtnListenerAttached = true;
+    resetBtn.addEventListener('click', () => {
+      scacDrillActive = null;
+      tableOnlyFilter = null;
+      resetBtn.classList.add('d-none');
+      renderInstallTableBody();
+      renderScacStatusSection();
+    });
+  }
 }
 
 function renderInstallTable() {
