@@ -331,7 +331,7 @@
     </div>
     <div class="card shadow-sm mb-4 border-0" style="border-radius:12px">
       <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 flex-wrap" style="border-radius:12px 12px 0 0">
-        <h6 class="section-title mb-0"><i class="bi bi-people me-1"></i>SCAC Progress Detail</h6>
+        <h6 class="section-title mb-0"><i class="bi bi-table me-1"></i>SCAC Progress Detail</h6>
         <button id="btn-reset-scac-drill" class="btn btn-sm btn-outline-secondary ms-auto d-none">
           <i class="bi bi-x-circle me-1"></i>Reset SCAC Drill-down
         </button>
@@ -689,6 +689,7 @@ let activeCompletionCols = []; // subset of COMPLETION_COLS present in the loade
 let chartScac, chartProgram, chartTrend, chartBodyType, chartScacStatus;
 
 let scacDrillActive = null; // currently drilled SCAC name
+let scacResetBtnListenerAttached = false; // track reset button listener
 
 let activeKpiHighlight = []; // column names to highlight in install table
 let sortState   = { col: null, dir: 1 };
@@ -1682,7 +1683,7 @@ function renderScacStatusSection() {
     const isActive = row.scacName === scacDrillActive;
     const pctRounded = row.pct.toFixed(1);
     const progressBar = `<div class="progress" style="height:8px;min-width:60px">
-      <div class="progress-bar bg-success" role="progressbar" style="width:${row.pct.toFixed(1)}%"></div>
+      <div class="progress-bar bg-success" role="progressbar" style="width:${row.pct.toFixed(1)}%" aria-valuenow="${row.pct.toFixed(1)}" aria-valuemin="0" aria-valuemax="100"></div>
     </div>
     <small>${pctRounded}%</small>`;
     return `<tr data-scac="${row.scacName.replace(/"/g,'&quot;')}" class="${isActive ? 'table-primary' : ''}">
@@ -1716,10 +1717,10 @@ function renderScacStatusSection() {
     });
   });
 
-  // Wire up reset button
+  // Wire up reset button (only attach listener once)
   const resetBtn = document.getElementById('btn-reset-scac-drill');
-  if (resetBtn && !resetBtn._scacListener) {
-    resetBtn._scacListener = true;
+  if (resetBtn && !scacResetBtnListenerAttached) {
+    scacResetBtnListenerAttached = true;
     resetBtn.addEventListener('click', () => {
       scacDrillActive = null;
       tableOnlyFilter = null;
