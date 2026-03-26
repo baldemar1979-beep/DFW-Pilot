@@ -190,6 +190,12 @@
       </div>
     </div>
 
+    <!-- Contextual banner shown when a Campaign Status filter is active -->
+    <div id="kpi-status-banner" class="alert alert-info py-2 px-3 d-none mt-3 mb-0" role="alert" style="font-size:.875rem">
+      <i class="bi bi-info-circle-fill me-1"></i>
+      Fleet totals (Total, Done, Removed, Replaced, Scheduled, Completion Rate) always reflect all records for the active filters. Install &amp; compliance KPIs reflect the selected Campaign Status.
+    </div>
+
     <!-- ══ Section 1: Key Performance Indicators ══ -->
     <h5 class="section-title mb-3 mt-4"><i class="bi bi-speedometer2 me-2"></i>Key Performance Indicators</h5>
     <div class="row g-3 mb-4" id="kpi-row">
@@ -499,8 +505,9 @@ const ALL_COLS = Object.values(COL);
 /* ============================================================
    STATE
    ============================================================ */
-let rawData   = [];   // all rows parsed from Excel
-let filtered  = [];   // rows after applying filters
+let rawData              = [];   // all rows parsed from Excel
+let filtered             = [];   // rows after applying filters
+let filteredExcludeStatus = [];  // rows after applying filters except Campaign Status
 let currentFilename  = '';
 let currentFileSize  = 0;
 let currentUploadTime = null;
@@ -860,6 +867,38 @@ function applyFilters() {
     return true;
   });
 
+  // Build a parallel array that applies all filters except Campaign Status.
+  // Used by Group 1 KPIs so fleet totals are never affected by status filtering.
+  filteredExcludeStatus = rawData.filter(row => {
+    if (scac     !== 'All' && String(row[COL.scac]     ?? '').trim() !== scac)     return false;
+    if (program  !== 'All' && String(row[COL.program]  ?? '').trim() !== program)  return false;
+    if (domicile !== 'All' && String(row[COL.domicile] ?? '').trim() !== domicile) return false;
+
+    if (dateFrom || dateTo) {
+      const d = parseDate(row[COL.scheduledDate]);
+      if (d) {
+        if (dateFrom && d < new Date(dateFrom)) return false;
+        if (dateTo   && d > new Date(dateTo + 'T23:59:59')) return false;
+      }
+    }
+
+    if (search) {
+      const haystack = [
+        row[COL.equipmentId], row[COL.vin], row[COL.licensePlate],
+        row[COL.scac], row[COL.domicile]
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+
+    return true;
+  });
+
+  // Show informational banner when a Campaign Status filter is active
+  const banner = document.getElementById('kpi-status-banner');
+  if (banner) {
+    banner.classList.toggle('d-none', status === 'All');
+  }
+
   renderKPIs();
   renderCharts();
   renderTab2KPIs();
@@ -932,11 +971,14 @@ function computeMedian(arr) {
    KPI CARDS
    ============================================================ */
 function renderKPIs() {
-  const total    = filtered.length;
-  const done     = filtered.filter(r => /done/i.test(r[COL.status] ?? '')).length;
-  const removed  = filtered.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
-  const replaced = filtered.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
-  const scheduled = filtered.filter(r => r[COL.scheduledDate]).length;
+  // Group 1: always use filteredExcludeStatus so Campaign Status filter does not
+  // collapse these fleet-wide counters to misleading values (e.g. Done = 0).
+  const base     = filteredExcludeStatus;
+  const total    = base.length;
+  const done     = base.filter(r => /done/i.test(r[COL.status] ?? '')).length;
+  const removed  = base.filter(r => /removed/i.test(r[COL.status] ?? '')).length;
+  const replaced = base.filter(r => /replaced/i.test(r[COL.status] ?? '')).length;
+  const scheduled = base.filter(r => r[COL.scheduledDate]).length;
   const rate = total ? Math.round(done / total * 100) : 0;
 
   document.getElementById('kpi-total').textContent      = total.toLocaleString();
