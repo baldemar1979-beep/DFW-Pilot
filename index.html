@@ -126,6 +126,10 @@
     #scac-status-table tbody tr:hover { background: #eef3ff; cursor: pointer; }
     #scac-status-table tbody tr.table-primary { background: #cfe2ff !important; }
 
+    /* Multi-select Campaign Status dropdown */
+    #filter-status-btn { min-width:160px; text-align:left; font-size:.875rem; padding:4px 28px 4px 8px; }
+    #filter-status-menu { max-height:300px; overflow-y:auto; min-width:270px; }
+
     /* KPI column highlight */
     #install-table thead th.col-kpi-highlight { background: rgba(245,166,35,0.35) !important; outline: 2px solid var(--brand-gold); outline-offset: -2px; }
     #install-table tbody td.col-kpi-cell-hl { box-shadow: inset 0 0 0 2px var(--brand-gold) !important; }
@@ -227,7 +231,16 @@
         </div>
         <div class="col-12 col-md-auto">
           <label class="form-label fw-semibold small mb-1">Campaign Status</label>
-          <select id="filter-status" class="form-select form-select-sm" style="min-width:160px"></select>
+          <div class="dropdown" id="filter-status-container">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                    id="filter-status-btn"
+                    data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
+                    aria-expanded="false">
+              All
+            </button>
+            <ul class="dropdown-menu" id="filter-status-menu"></ul>
+          </div>
         </div>
         <div class="col-12 col-md-auto">
           <label class="form-label fw-semibold small mb-1">Domicile</label>
@@ -681,6 +694,7 @@ const ALL_COLS = Object.values(COL);
 let rawData   = [];   // all rows parsed from Excel
 let filtered  = [];   // rows after applying filters
 let scacFiltered = []; // rows after applying filters except Campaign Status filter
+let statusFilterSet = new Set(); // selected Campaign Status values; empty = "All"
 let currentFilename  = '';
 let currentFileSize  = 0;
 let currentUploadTime = null;
@@ -897,9 +911,11 @@ function initDashboard() {
    FILTERS
    ============================================================ */
 function resetFilters() {
-  ['filter-scac','filter-program','filter-status','filter-domicile'].forEach(id => {
+  ['filter-scac','filter-program','filter-domicile'].forEach(id => {
     document.getElementById(id).value = 'All';
   });
+  statusFilterSet.clear();
+  updateStatusFilterBtn();
   document.getElementById('filter-date-from').value = '';
   document.getElementById('filter-date-to').value   = '';
   document.getElementById('filter-search').value    = '';
@@ -913,8 +929,52 @@ function uniqueValues(col) {
 function populateFilters() {
   fillSelect('filter-scac',     uniqueValues(COL.scac));
   fillSelect('filter-program',  uniqueValues(COL.program));
-  fillSelect('filter-status',   uniqueValues(COL.status));
+  populateStatusFilter(uniqueValues(COL.status).filter(v => v !== 'All'));
   fillSelect('filter-domicile', uniqueValues(COL.domicile));
+}
+
+function updateStatusFilterBtn() {
+  const btn = document.getElementById('filter-status-btn');
+  if (!btn) return;
+  if (statusFilterSet.size === 0) {
+    btn.textContent = 'All';
+  } else if (statusFilterSet.size === 1) {
+    btn.textContent = Array.from(statusFilterSet)[0];
+  } else {
+    btn.textContent = statusFilterSet.size + ' selected';
+  }
+}
+
+function populateStatusFilter(values) {
+  const menu = document.getElementById('filter-status-menu');
+  if (!menu) return;
+  // Re-check any previously selected values that still exist
+  menu.innerHTML = values.map((v, i) => {
+    const checked = statusFilterSet.has(v) ? ' checked' : '';
+    const cbId    = 'status-cb-' + i;
+    return `<li>
+      <label class="dropdown-item d-flex align-items-center gap-2 py-1" style="white-space:normal;cursor:pointer">
+        <input type="checkbox" class="form-check-input status-filter-cb flex-shrink-0 mt-0"
+               value="${v.replace(/"/g, '&quot;')}" id="${cbId}"${checked}>
+        <span class="small">${v}</span>
+      </label>
+    </li>`;
+  }).join('');
+
+  // Wire up checkbox event handlers
+  menu.querySelectorAll('.status-filter-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        statusFilterSet.add(cb.value);
+      } else {
+        statusFilterSet.delete(cb.value);
+      }
+      updateStatusFilterBtn();
+      applyFilters();
+    });
+  });
+
+  updateStatusFilterBtn();
 }
 
 function fillSelect(id, values) {
@@ -924,7 +984,7 @@ function fillSelect(id, values) {
   if (values.includes(prev)) sel.value = prev;
 }
 
-['filter-scac','filter-program','filter-status','filter-domicile',
+['filter-scac','filter-program','filter-domicile',
  'filter-date-from','filter-date-to','filter-search'].forEach(id => {
   document.getElementById(id).addEventListener('change', applyFilters);
   document.getElementById(id).addEventListener('input',  applyFilters);
@@ -1024,7 +1084,6 @@ function scrollToVehicleRecords() {
 function applyFilters() {
   const scac     = document.getElementById('filter-scac').value;
   const program  = document.getElementById('filter-program').value;
-  const status   = document.getElementById('filter-status').value;
   const domicile = document.getElementById('filter-domicile').value;
   const dateFrom = document.getElementById('filter-date-from').value;
   const dateTo   = document.getElementById('filter-date-to').value;
@@ -1033,7 +1092,7 @@ function applyFilters() {
   filtered = rawData.filter(row => {
     if (scac     !== 'All' && String(row[COL.scac]     ?? '').trim() !== scac)     return false;
     if (program  !== 'All' && String(row[COL.program]  ?? '').trim() !== program)  return false;
-    if (status   !== 'All' && String(row[COL.status]   ?? '').trim() !== status)   return false;
+    if (statusFilterSet.size > 0 && !statusFilterSet.has(String(row[COL.status] ?? '').trim())) return false;
     if (domicile !== 'All' && String(row[COL.domicile] ?? '').trim() !== domicile) return false;
 
     if (dateFrom || dateTo) {
@@ -1532,8 +1591,9 @@ function renderTab2Charts() {
    SCAC-LEVEL CAMPAIGN STATUS PROGRESS
    ============================================================ */
 function renderScacStatusSection() {
-  // Collect all SCACs present in scacFiltered
-  const scacSet = new Set(scacFiltered.map(r => String(r[COL.scac] ?? '').trim()).filter(Boolean));
+  // Only include rows that have a Campaign Status value (installed vehicles, not just scheduled)
+  const rowsWithStatus = scacFiltered.filter(r => String(r[COL.status] ?? '').trim() !== '');
+  const scacSet = new Set(rowsWithStatus.map(r => String(r[COL.scac] ?? '').trim()).filter(Boolean));
   const scacs = Array.from(scacSet).sort();
 
   const noData = document.getElementById('scac-status-no-data');
@@ -1553,7 +1613,7 @@ function renderScacStatusSection() {
   // Collect all known status labels from defs + any "Other" found in data
   const knownLabels = SCAC_STATUS_DEFS.map(d => d.label);
   const otherStatuses = new Set();
-  scacFiltered.forEach(r => {
+  rowsWithStatus.forEach(r => {
     const s = String(r[COL.status] ?? '').trim();
     if (s && !knownLabels.includes(s)) otherStatuses.add(s);
   });
@@ -1571,7 +1631,7 @@ function renderScacStatusSection() {
     scacCounts[s] = {};
     statusDefs.forEach(d => { scacCounts[s][d.label] = 0; });
   });
-  scacFiltered.forEach(r => {
+  rowsWithStatus.forEach(r => {
     const s = String(r[COL.scac] ?? '').trim();
     if (!s) return;
     const st = String(r[COL.status] ?? '').trim();
@@ -1683,7 +1743,7 @@ function renderScacStatusSection() {
     const isActive = row.scacName === scacDrillActive;
     const pctRounded = row.pct.toFixed(1);
     const progressBar = `<div class="progress" style="height:8px;min-width:60px">
-      <div class="progress-bar bg-success" role="progressbar" style="width:${row.pct.toFixed(1)}%" aria-valuenow="${row.pct.toFixed(1)}" aria-valuemin="0" aria-valuemax="100"></div>
+      <div class="progress-bar bg-success" role="progressbar" style="width:${pctRounded}%" aria-valuenow="${pctRounded}" aria-valuemin="0" aria-valuemax="100"></div>
     </div>
     <small>${pctRounded}%</small>`;
     return `<tr data-scac="${row.scacName.replace(/"/g,'&quot;')}" class="${isActive ? 'table-primary' : ''}">
